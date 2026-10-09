@@ -1,17 +1,29 @@
 {
   "expo": {
-    "name": "carnet-de-fonte",
+    "name": "Carnet de Fonte",
     "slug": "carnet-de-fonte",
+    "scheme": "carnetdefonte",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#101315",
+    "runtimeVersion": { "policy": "appVersion" },
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#15191B"
+    },
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "com.paulcaraty.carnetdefonte",
+      "supportsTablet": false,
+      "config": { "usesNonExemptEncryption": false },
+      "infoPlist": { "ITSAppUsesNonExemptEncryption": false }
     },
     "android": {
+      "package": "com.paulcaraty.carnetdefonte",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#15191B",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -20,6 +32,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-sqlite",
+      "expo-secure-store",
+      "expo-sharing"
+    ]
   }
 }
