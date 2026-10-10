@@ -9,6 +9,8 @@ export interface Exercise {
   load: number;
   step: number;
   loadHistory: { d: string; v: number }[];
+  /** Horodatage de la dernière modification (synchro entre appareils). */
+  u?: number;
 }
 
 export interface WorkoutItem {
@@ -23,6 +25,7 @@ export interface Workout {
   name: string;
   order: number;
   items: WorkoutItem[];
+  u?: number;
 }
 
 export interface SetLog {
@@ -46,6 +49,7 @@ export interface Log {
   durationMin: number;
   note: string;
   entries: EntryLog[];
+  u?: number;
 }
 
 /** Séance en cours : les champs restent du texte pendant la saisie (virgule, champ vide…). */
@@ -128,6 +132,18 @@ export interface Data {
   active: Active | null;
   settings: Settings;
   garmin: GarminData | null;
+  meta: SyncMeta;
+}
+
+export interface SyncMeta {
+  /** Données de départ jamais modifiées : la première synchro les remplace par celles du compte. */
+  pristine: boolean;
+  /** Suppressions à propager aux autres appareils : id → date. */
+  tomb: Record<string, number>;
+  /** Compteur de modifications locales ; `syncedRev` = dernière version envoyée. */
+  rev: number;
+  syncedRev: number;
+  syncedAt: number;
 }
 
 export type Tab = 'seances' | 'seance' | 'exos' | 'progres' | 'coach' | 'reglages';

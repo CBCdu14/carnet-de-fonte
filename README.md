@@ -9,7 +9,7 @@ Appli de suivi de musculation pour iPhone et Android : web app installable (PWA)
 - **Progrès** : courbe de la série la plus lourde et du 1RM estimé (Epley), volume hebdomadaire, historique.
 - **Coach** : questions à ChatGPT (API OpenAI, ta clé, stockée chiffrée sur le téléphone) avec tes données en contexte. Bouton pour copier tes données vers l'app ChatGPT.
 - **Garmin** (montre + balance) : poids, calories dépensées, pas, sommeil, FC repos et activités, via le dépôt privé `carnet-data` (synchro nocturne). Réglages → Garmin.
-- **Données sur le téléphone** (IndexedDB en web, SQLite en natif), fonctionne sans réseau. Export / import JSON dans Réglages.
+- **Synchro entre appareils** via le dépôt privé `carnet-data` (fichier `data/carnet.json`), fusion par élément (la modification la plus récente gagne). Fonctionne aussi hors ligne : les données restent sur l'appareil et partent à la synchro suivante. Export / import JSON dans Réglages.
 
 ---
 

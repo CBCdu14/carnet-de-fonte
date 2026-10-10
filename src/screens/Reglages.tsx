@@ -7,6 +7,7 @@ import { Btn, Card, Chip, Field, H3, Header, Meta, NavBtn, Screen, Body, useNav 
 import { getKey, setKey } from '../coach';
 import { getGhToken, setGhToken } from '../garmin';
 import { useGarminSync } from '../useGarminSync';
+import { useCloudSync } from '../useCloudSync';
 import { fDateL } from '../logic';
 import { dayStr } from '../logic';
 import type { Data } from '../types';
@@ -27,6 +28,7 @@ export function Reglages() {
   const [hasGh, setHasGh] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const syncGarmin = useGarminSync();
+  const syncCloud = useCloudSync();
 
   useEffect(() => {
     getKey().then((k) => setHasKey(!!k)).catch(() => {});
@@ -36,26 +38,31 @@ export function Reglages() {
   const saveGarmin = async () => {
     const r = repo.trim().replace(/^https?:\/\/github\.com\//, '').replace(/\/$/, '');
     if (!/^[\w.-]+\/[\w.-]+$/.test(r)) return toast('Dépôt attendu au format pseudo/carnet-data.');
-    setRepo(r);
-    setSettings({ garminRepo: r });
     if (gh.trim()) {
       await setGhToken(gh.trim());
       setGh('');
       setHasGh(true);
     }
-    toast('Garmin configuré, synchro…');
+    setRepo(r);
+    setSettings({ garminRepo: r });
+    toast('Synchro configurée');
   };
   const runSync = async () => {
     setSyncing(true);
-    const err = await syncGarmin();
+    const err = await syncCloud();
+    const errG = await syncGarmin();
     setSyncing(false);
-    toast(err ?? 'Données Garmin à jour');
+    toast(err ?? (errG && !/introuvable/.test(errG) ? errG : 'Synchronisé'));
   };
-  // Lance la synchro quand le dépôt vient d'être enregistré
+  // Première synchro dès que dépôt et jeton sont renseignés
   useEffect(() => {
-    if (data.settings.garminRepo && hasGh && !data.garmin) runSync();
+    if (data.settings.garminRepo && hasGh && !data.meta.syncedAt) runSync();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.settings.garminRepo, hasGh]);
+  const t2 = (ms: number) => {
+    const d = new Date(ms);
+    return `${fDateL(ms)} à ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  };
 
   const saveKey = async () => {
     const k = key.trim();
@@ -90,6 +97,30 @@ export function Reglages() {
 
   return (
     <Screen header={<Header title="Réglages" left={<NavBtn label="‹ Séances" onPress={() => go('seances')} />} />}>
+      <Card>
+        <H3>Synchro entre appareils et Garmin</H3>
+        <Meta>
+          {data.meta.syncedAt
+            ? `Dernière synchro : ${t2(data.meta.syncedAt)}${data.meta.rev !== data.meta.syncedRev ? ' · modifications en attente' : ''}.`
+            : 'Tes séances, exercices et charges sont enregistrés dans ton dépôt GitHub privé carnet-data : tous tes appareils retrouvent les mêmes données. Renseigne le même dépôt et le même jeton sur chaque appareil.'}
+          {data.garmin ? `\nGarmin : données du ${data.garmin.updatedAt ? fDateL(data.garmin.updatedAt) : '?'} (${data.garmin.days.length} jours, ${data.garmin.weights.length} pesées, ${data.garmin.activities.length} activités).` : ''}
+        </Meta>
+        <Field label="Dépôt GitHub privé" value={repo} onChangeText={setRepo} placeholder="pseudo/carnet-data" autoCapitalize="none" autoCorrect={false} />
+        <Field
+          label={hasGh ? 'Remplacer le jeton GitHub' : 'Jeton GitHub (Contents : lecture et écriture)'}
+          value={gh}
+          onChangeText={setGh}
+          placeholder="github_pat_…"
+          autoCapitalize="none"
+          autoCorrect={false}
+          secureTextEntry
+        />
+        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+          <Btn small label="Enregistrer" onPress={saveGarmin} disabled={!repo.trim() || (!hasGh && !gh.trim())} />
+          {data.settings.garminRepo && hasGh ? <Btn small kind="ghost" label={syncing ? 'Synchro…' : 'Synchroniser maintenant'} onPress={runSync} disabled={syncing} /> : null}
+        </View>
+      </Card>
+
       <Card>
         <H3>Coach ChatGPT</H3>
         <Meta>
@@ -128,29 +159,6 @@ export function Reglages() {
       </Card>
 
       <Card>
-        <H3>Garmin (montre et balance)</H3>
-        <Meta>
-          {data.garmin
-            ? `Dernières données Garmin : ${data.garmin.updatedAt ? fDateL(data.garmin.updatedAt) : '?'} · ${data.garmin.days.length} jours, ${data.garmin.weights.length} pesées, ${data.garmin.activities.length} activités.`
-            : 'Tes données Garmin sont récupérées chaque nuit dans ton dépôt GitHub privé carnet-data (voir son README). Renseigne-le ici avec un jeton GitHub en lecture seule.'}
-        </Meta>
-        <Field label="Dépôt GitHub privé" value={repo} onChangeText={setRepo} placeholder="pseudo/carnet-data" autoCapitalize="none" autoCorrect={false} />
-        <Field
-          label={hasGh ? 'Remplacer le jeton GitHub' : 'Jeton GitHub (lecture seule)'}
-          value={gh}
-          onChangeText={setGh}
-          placeholder="github_pat_…"
-          autoCapitalize="none"
-          autoCorrect={false}
-          secureTextEntry
-        />
-        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-          <Btn small label="Enregistrer" onPress={saveGarmin} disabled={!repo.trim() || (!hasGh && !gh.trim())} />
-          {data.settings.garminRepo && hasGh ? <Btn small kind="ghost" label={syncing ? 'Synchro…' : 'Synchroniser maintenant'} onPress={runSync} disabled={syncing} /> : null}
-        </View>
-      </Card>
-
-      <Card>
         <H3>Temps de repos</H3>
         <Meta>Lancé automatiquement quand tu valides une série.</Meta>
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
@@ -163,8 +171,7 @@ export function Reglages() {
       <Card>
         <H3>Sauvegarde</H3>
         <Meta>
-          Tes données sont stockées uniquement sur ce téléphone ({Object.keys(data.exercises).length} exercices, {data.workouts.length} séances types, {data.logs.length} séances enregistrées). Exporte-les de temps en temps (iCloud Drive, Google Drive, mail…) et
-          réimporte-les pour changer de téléphone.
+          Copie de secours de tes données ({Object.keys(data.exercises).length} exercices, {data.workouts.length} séances types, {data.logs.length} séances enregistrées). Importer une sauvegarde remplace tout, y compris sur tes autres appareils synchronisés.
         </Meta>
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
           <Btn small label="Exporter" onPress={exportData} />
