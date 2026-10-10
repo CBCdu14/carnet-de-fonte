@@ -4,7 +4,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { useStore } from '../store';
 import { useTheme } from '../theme';
 import { Btn, Card, Empty, H2, Header, Hint, LoadCtl, Meta, Screen, Sheet, Body, useNav } from '../ui';
-import { EQUIP, fDate, fmt, lastDone, sharedCount } from '../logic';
+import { EQUIP, fDate, fmt, lastDone, lastPerf, sharedCount } from '../logic';
 import { WorkoutSheet } from '../sheets/WorkoutSheet';
 
 export function Seances() {
@@ -96,6 +96,7 @@ export function Seances() {
             {w.items.map((it, i) => {
               const ex = data.exercises[it.ex];
               const n = ex ? sharedCount(data.workouts, ex.id) : 0;
+              const prev = lastPerf(data.logs, it.ex);
               return (
                 <View key={it.ex + i} style={{ borderTopWidth: 1, borderTopColor: t.line, paddingVertical: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                   <View style={{ flex: 1, minWidth: 0 }}>
@@ -103,6 +104,7 @@ export function Seances() {
                     <Meta>
                       {it.sets}×{it.reps} · {ex ? EQUIP[ex.equip] : ''}
                       {ex?.equip === 'halteres' ? ' (par haltère)' : ''}
+                      {prev ? ` · dernière : ${prev.sets.map((p) => fmt(p.r)).join('/')}` : ''}
                       {n > 1 ? <Text style={{ color: t.accent, fontWeight: '700' }}>{` · dans ${n} séances`}</Text> : null}
                     </Meta>
                   </View>

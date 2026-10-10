@@ -55,11 +55,18 @@ export interface SetDraft {
   done: boolean;
 }
 
+export interface PrevPerf {
+  date: string;
+  sets: { kg: number; r: number }[];
+}
+
 export interface ActiveEntry {
   ex: string;
   name: string;
   target: number;
   sets: SetDraft[];
+  /** Dernière fois que l'exercice a été fait (toutes séances confondues). */
+  prev?: PrevPerf;
 }
 
 export interface Active {

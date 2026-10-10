@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { AppState } from 'react-native';
 import { kv } from './platform/storage';
 import type { Active, Data, Exercise, GarminData, Log, Settings, Workout } from './types';
-import { dayStr, parseNum, r2, uid } from './logic';
+import { dayStr, goalFor, lastPerf, parseNum, r2, uid } from './logic';
 import { seedExercises, seedWorkouts } from './seed';
 
 const K = {
@@ -200,11 +200,17 @@ export function StoreProvider({ children, fallback }: { children: React.ReactNod
               .filter((it) => d.exercises[it.ex])
               .map((it) => {
                 const ex = d.exercises[it.ex];
+                const prev = lastPerf(d.logs, it.ex);
                 return {
                   ex: it.ex,
                   name: ex.name,
                   target: it.reps,
-                  sets: Array.from({ length: it.sets }, () => ({ kg: String(ex.load).replace('.', ','), r: String(it.reps), done: false })),
+                  prev,
+                  sets: Array.from({ length: it.sets }, (_, j) => ({
+                    kg: String(ex.load).replace('.', ','),
+                    r: String(goalFor(prev?.sets[j], ex.load, it.reps)),
+                    done: false,
+                  })),
                 };
               }),
           };

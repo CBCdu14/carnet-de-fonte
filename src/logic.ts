@@ -1,4 +1,4 @@
-import type { Active, Exercise, Log, Workout } from './types';
+import type { Active, Exercise, Log, PrevPerf, Workout } from './types';
 
 export const MUSCLES = ['Pectoraux', 'Dos', 'Épaules', 'Biceps', 'Triceps', 'Jambes', 'Fessiers', 'Mollets', 'Abdos', 'Autre'];
 export const EQUIP: Record<string, string> = {
@@ -150,4 +150,24 @@ export function proposals(active: Active, exercises: Record<string, Exercise>): 
 
 export function lastDone(logs: Log[], woId: string) {
   return logs.find((l) => l.workoutId === woId)?.date;
+}
+
+/** Séries validées de la dernière séance où l'exercice a été fait. */
+export function lastPerf(logs: Log[], exId: string): PrevPerf | undefined {
+  for (const l of logs) {
+    const e = l.entries.find((x) => x.ex === exId);
+    const sets = e?.sets.filter((s) => s.done && s.r > 0).map((s) => ({ kg: s.kg, r: s.r }));
+    if (sets?.length) return { date: l.date, sets };
+  }
+  return undefined;
+}
+
+/** Objectif de reps d'une série : +1 rep par rapport à la dernière fois à la même charge,
+ *  sans dépasser l'objectif de la séance ; mêmes reps si la charge a augmenté. */
+export function goalFor(prev: { kg: number; r: number } | undefined, kg: number, target: number): number {
+  if (!prev) return target;
+  const pr = Math.floor(prev.r);
+  if (kg > prev.kg + 1e-9) return Math.max(1, Math.min(target, pr));
+  if (kg < prev.kg - 1e-9) return target;
+  return Math.max(1, Math.min(target, pr + 1));
 }

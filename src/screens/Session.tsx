@@ -4,7 +4,7 @@ import { buzz } from '../platform/buzz';
 import { useStore } from '../store';
 import { useTheme } from '../theme';
 import { Btn, Card, Eyebrow, H1, H2, LinkBtn, LoadCtl, Meta, Plates, Screen, useNav } from '../ui';
-import { fTime, fmt, pad, sharedCount } from '../logic';
+import { fDate, fTime, fmt, goalFor, pad, parseNum, sharedCount } from '../logic';
 import { FinishSheet } from '../sheets/FinishSheet';
 
 function useElapsed(start: number) {
@@ -47,7 +47,8 @@ export function Session() {
       entries: x.entries.map((e, ei) => {
         if (ei !== i) return e;
         const last = e.sets[e.sets.length - 1];
-        return { ...e, sets: [...e.sets, { kg: last?.kg ?? fmt(data.exercises[e.ex]?.load ?? 0), r: String(e.target), done: false }] };
+        const kg = last?.kg ?? fmt(data.exercises[e.ex]?.load ?? 0);
+        return { ...e, sets: [...e.sets, { kg, r: String(goalFor(e.prev?.sets[e.sets.length], parseNum(kg), e.target)), done: false }] };
       }),
     }));
   const rmSet = (i: number) => updateActive((x) => ({ ...x, entries: x.entries.map((e, ei) => (ei !== i ? e : { ...e, sets: e.sets.slice(0, -1) })) }));
@@ -87,6 +88,7 @@ export function Session() {
                 <H2>{ex?.name ?? e.name}</H2>
                 <Meta>
                   Objectif {e.sets.length}×{e.target}
+                  {e.prev ? ` · dernière fois (${fDate(e.prev.date)}) : ${e.prev.sets.map((p) => `${fmt(p.kg)}×${fmt(p.r)}`).join(' · ')}` : ' · première fois'}
                   {n > 1 ? <Text style={{ color: t.accent, fontWeight: '700' }}>{` · charge partagée avec ${n - 1} autre${n > 2 ? 's' : ''} séance${n > 2 ? 's' : ''}`}</Text> : null}
                 </Meta>
               </View>
@@ -102,8 +104,13 @@ export function Session() {
             </View>
             <Plates ex={ex} />
             <View style={{ gap: 6 }}>
-              {e.sets.map((s, j) => (
-                <View key={j} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {e.sets.map((s, j) => {
+                const prev = e.prev?.sets[j];
+                const goal = goalFor(prev, parseNum(s.kg), e.target);
+                const reached = s.done && parseNum(s.r) >= goal;
+                return (
+                <View key={j} style={{ gap: 2 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Text style={{ width: 22, textAlign: 'center', color: t.muted, fontWeight: '800', fontSize: 16 }}>{j + 1}</Text>
                   <View style={fieldBox(s.done)}>
                     <TextInput style={input} value={s.kg} onChangeText={(v) => setField(i, j, 'kg', v)} keyboardType="decimal-pad" selectTextOnFocus accessibilityLabel={`Charge série ${j + 1}`} />
@@ -123,7 +130,12 @@ export function Session() {
                     <Text style={{ fontSize: 18, fontWeight: '800', color: s.done ? t.surface : t.muted }}>✓</Text>
                   </Pressable>
                 </View>
-              ))}
+                <Text style={{ marginLeft: 30, fontSize: 13, color: reached ? t.good : t.muted, fontVariant: ['tabular-nums'] }}>
+                  {prev ? `Avant ${fmt(prev.kg)} kg × ${fmt(prev.r)}  →  ` : ''}objectif {goal} reps{reached ? ' ✓' : ''}
+                </Text>
+                </View>
+                );
+              })}
             </View>
             <View style={{ flexDirection: 'row', gap: 18 }}>
               <LinkBtn label="+ Série" onPress={() => addSet(i)} />
