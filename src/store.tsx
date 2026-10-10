@@ -50,10 +50,12 @@ async function loadData(): Promise<Data> {
     active: active ?? null,
     settings: { ...DEFAULT_SETTINGS, ...(settings ?? {}) },
     garmin: garmin ?? null,
-    meta: { ...EMPTY_META, ...(meta ?? {}) },
+    // Version d'avant la synchro : si c'est encore le programme d'exemple, la synchro le remplacera
+    meta: meta ?? { ...EMPTY_META, pristine: !(logs ?? []).length && (workouts ?? []).every((w) => SEED_WO.has(w.id)) },
   };
 }
 
+const SEED_WO = new Set(['push', 'pull', 'jambes', 'fullbody']);
 const EMPTY_META: SyncMeta = { pristine: false, tomb: {}, rev: 0, syncedRev: 0, syncedAt: 0 };
 
 const sortWo = (w: Workout[]) => [...w].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, 'fr'));
@@ -84,6 +86,7 @@ export interface Store {
   setGarmin: (g: GarminData | null) => void;
   /** Applique le résultat d'une synchro démarrée à la version locale `rev`. */
   applySync: (p: Payload, rev: number) => void;
+  setSyncError: (msg: string | null) => void;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -294,9 +297,10 @@ export function StoreProvider({ children, fallback }: { children: React.ReactNod
             exercises: m.exercises,
             workouts: sortWo(m.workouts),
             logs: m.logs,
-            meta: { ...d.meta, tomb: m.tomb, pristine: false, syncedRev: rev, syncedAt: Date.now() },
+            meta: { ...d.meta, tomb: m.tomb, pristine: false, syncedRev: rev, syncedAt: Date.now(), lastError: undefined },
           };
         }),
+      setSyncError: (msg) => set((d) => (d.meta.lastError === (msg ?? undefined) ? d : { ...d, meta: { ...d.meta, lastError: msg ?? undefined } })),
     };
   }, [data]);
 

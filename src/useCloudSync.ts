@@ -25,7 +25,9 @@ export function useCloudSync(auto = false) {
       latest.current.applySync(merged, rev);
       return null;
     } catch (e) {
-      return e instanceof SyncError ? e.message : 'Synchro impossible pour le moment.';
+      const msg = e instanceof SyncError ? e.message : 'Synchro impossible pour le moment.';
+      latest.current.setSyncError(msg);
+      return msg;
     } finally {
       busy.current = false;
     }

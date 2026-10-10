@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Platform, View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 import { exportBackup, pickBackup } from '../platform/backup';
 import Constants from 'expo-constants';
 import { useStore } from '../store';
@@ -103,6 +103,7 @@ export function Reglages() {
           {data.meta.syncedAt
             ? `Dernière synchro : ${t2(data.meta.syncedAt)}${data.meta.rev !== data.meta.syncedRev ? ' · modifications en attente' : ''}.`
             : 'Tes séances, exercices et charges sont enregistrés dans ton dépôt GitHub privé carnet-data : tous tes appareils retrouvent les mêmes données. Renseigne le même dépôt et le même jeton sur chaque appareil.'}
+          {data.meta.lastError ? <Text style={{ color: '#FF3B30' }}>{`\n${data.meta.lastError}`}</Text> : null}
           {data.garmin ? `\nGarmin : données du ${data.garmin.updatedAt ? fDateL(data.garmin.updatedAt) : '?'} (${data.garmin.days.length} jours, ${data.garmin.weights.length} pesées, ${data.garmin.activities.length} activités).` : ''}
         </Meta>
         <Field label="Dépôt GitHub privé" value={repo} onChangeText={setRepo} placeholder="pseudo/carnet-data" autoCapitalize="none" autoCorrect={false} />

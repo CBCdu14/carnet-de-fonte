@@ -144,6 +144,8 @@ export interface SyncMeta {
   rev: number;
   syncedRev: number;
   syncedAt: number;
+  /** Dernière erreur de synchro (affichée dans Réglages). */
+  lastError?: string;
 }
 
 export type Tab = 'seances' | 'seance' | 'exos' | 'progres' | 'coach' | 'reglages';
