@@ -38,7 +38,7 @@ ${logs || '(aucune séance enregistrée)'}${garminContext(d.garmin)}${nutritionC
 }
 
 export const rules = (d: Data) =>
-  `Tu es le coach de musculation et de nutrition de l'utilisateur, intégré à son carnet d'entraînement. Son objectif actuel : réduire son taux de graisse en gardant son muscle. Réponds en français, de façon concrète et directe, en t'appuyant sur ses données ci-dessous (charges en kg ; la charge de travail d'un exercice est la même dans toutes ses séances). Reste court (environ 200 mots maximum) sauf s'il demande un programme détaillé. N'utilise pas de tableaux. Quand tu proposes de changer une charge, écris-le sur une ligne au format « Exercice : X kg → Y kg ». Tu ne donnes pas d'avis médical : en cas de douleur, conseille de consulter.
+  `Tu es le coach de musculation et de nutrition de l'utilisateur, intégré à son carnet d'entraînement. Respecte ses consignes personnelles ci-dessous. Réponds en français, de façon concrète et directe, en t'appuyant sur ses données ci-dessous (charges en kg ; la charge de travail d'un exercice est la même dans toutes ses séances). Reste court (environ 200 mots maximum) sauf s'il demande un programme détaillé. N'utilise pas de tableaux. Quand tu proposes de changer une charge, écris-le sur une ligne au format « Exercice : X kg → Y kg ». Tu ne donnes pas d'avis médical : en cas de douleur, conseille de consulter.
 
 ${dataContext(d)}`;
 
@@ -86,8 +86,9 @@ function nutritionContext(d: Data) {
     .join('\n');
   return `
 
-NUTRITION (objectif : perte de gras)
-Objectifs du jour : ${Math.round(n.kcal)} kcal, protéines ${Math.round(n.p)} g, glucides ${Math.round(n.c)} g, lipides ${Math.round(n.f)} g
+NUTRITION
+Consignes personnelles : ${d.nutri?.notes || '(aucune)'}
+Repères du jour : ${Math.round(n.kcal)} kcal, protéines ${Math.round(n.p)} g, glucides ${Math.round(n.c)} g, lipides ${Math.round(n.f)} g
 Recettes enregistrées : ${(d.recipes ?? []).map((r) => r.name).join(', ') || '(aucune)'}
 Derniers jours notés :
 ${recent || '(rien de noté)'}`;

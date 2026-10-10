@@ -16,6 +16,9 @@ const ROWS: Row[] = [
   ['oeuf', 'Œuf entier', 'Viandes et poissons', 140, 12.5, 0.5, 10, ['œuf', 60]],
   ['blanc_oeuf', "Blanc d'œuf", 'Viandes et poissons', 48, 11, 0.7, 0.2],
   ['tofu', 'Tofu ferme', 'Viandes et poissons', 130, 14, 2, 8],
+  ['poulet_kebab', 'Poulet façon kebab (barquette)', 'Viandes et poissons', 160, 22, 2, 7.5],
+  ['cordon_bleu', 'Cordon-bleu de poulet', 'Viandes et poissons', 230, 14, 14, 13, ['pièce', 100]],
+  ['steak', 'Steak haché 5 % MG (cru)', 'Viandes et poissons', 125, 21, 0, 5, ['steak', 125]],
   // Produits laitiers
   ['skyr', 'Skyr nature', 'Produits laitiers', 60, 10.5, 4, 0.2, ['pot', 150]],
   ['fb0', 'Fromage blanc 0 %', 'Produits laitiers', 47, 7.5, 4, 0.1],
@@ -33,6 +36,7 @@ const ROWS: Row[] = [
   ['riz_cuit', 'Riz blanc (cuit)', 'Féculents', 130, 2.7, 28, 0.3],
   ['pates', 'Pâtes (crues)', 'Féculents', 355, 12.5, 71, 1.5],
   ['pates_cuites', 'Pâtes (cuites)', 'Féculents', 150, 5.5, 30, 0.9],
+  ['pates_completes', 'Pâtes complètes (crues)', 'Féculents', 350, 13, 64, 2.5],
   ['semoule', 'Semoule (crue)', 'Féculents', 360, 12, 73, 1.5],
   ['quinoa', 'Quinoa (cru)', 'Féculents', 370, 14, 64, 6],
   ['avoine', "Flocons d'avoine", 'Féculents', 370, 13.5, 59, 7],
@@ -58,6 +62,9 @@ const ROWS: Row[] = [
   ['concombre', 'Concombre', 'Légumes et fruits', 13, 0.7, 2, 0.1],
   ['poelee', 'Poêlée de légumes (surgelée)', 'Légumes et fruits', 45, 2, 6, 1],
   ['banane', 'Banane', 'Légumes et fruits', 90, 1.1, 20, 0.3, ['banane', 120]],
+  ['kiwi', 'Kiwi', 'Légumes et fruits', 60, 1, 11, 0.6, ['kiwi', 75]],
+  ['peche', 'Pêche / nectarine', 'Légumes et fruits', 45, 1, 10, 0.3, ['fruit', 150]],
+  ['compote', 'Compote sans sucres ajoutés', 'Légumes et fruits', 55, 0.3, 12, 0.1, ['gourde', 90]],
   ['pomme', 'Pomme', 'Légumes et fruits', 52, 0.3, 12, 0.2, ['pomme', 150]],
   ['fruits_rouges', 'Fruits rouges (surgelés)', 'Légumes et fruits', 45, 1, 8, 0.3],
   ['avocat', 'Avocat', 'Légumes et fruits', 160, 2, 1.8, 15, ['avocat', 150]],
@@ -69,6 +76,7 @@ const ROWS: Row[] = [
   ['sauce_soja', 'Sauce soja', 'Divers', 60, 8, 6, 0, ['c. à soupe', 15]],
   ['miel', 'Miel', 'Divers', 320, 0.4, 80, 0, ['c. à café', 8]],
   ['choco_noir', 'Chocolat noir 70 %', 'Divers', 570, 8, 33, 43, ['carré', 10]],
+  ['gateau_yaourt', 'Gâteau au yaourt maison', 'Divers', 360, 6, 50, 15, ['part', 70]],
 ];
 
 export const BUILTIN_FOODS: Food[] = ROWS.map(([id, name, cat, kcal, p, c, f, unit]) => ({

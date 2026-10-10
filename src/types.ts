@@ -231,5 +231,7 @@ export interface NutriTargets {
   deficit: number;
   /** Poids saisi si pas de balance Garmin */
   weightKg?: number;
+  /** Consignes personnelles transmises au coach (préférences, règles) */
+  notes?: string;
   u?: number;
 }

@@ -90,7 +90,7 @@ export function autoTargets(d: Data, deficitPct: number): AutoTargets {
   return { kcal, p, c, f, weight, maintenance: Math.round(maintenance), source };
 }
 
-export const DEFAULT_TARGETS: NutriTargets = { kcal: 2200, p: 160, c: 220, f: 65, mode: 'auto', deficit: 15 };
+export const DEFAULT_TARGETS: NutriTargets = { kcal: 2100, p: 130, c: 250, f: 65, mode: 'auto', deficit: 5 };
 
 /** Lundi de la semaine d'une date. */
 export function mondayOf(date: Date) {

@@ -17,6 +17,9 @@ const QUICK: [string, number, number][] = [
   ['Kebab frites', 1100, 45],
   ['Salade composée', 550, 25],
   ['Sushis (12 pièces)', 600, 25],
+  ['Sushis (24 pièces)', 1150, 45],
+  ['Barbecue (merguez, chorizo)', 1000, 40],
+  ['Buffet chinois', 1100, 40],
   ['Plat de cantine', 700, 30],
 ];
 

@@ -60,12 +60,13 @@ function TargetsSheet({ onClose }: { onClose: () => void }) {
   const [p, setP] = useState(String(data.nutri.p));
   const [c, setC] = useState(String(data.nutri.c));
   const [f, setF] = useState(String(data.nutri.f));
+  const [notes, setNotes] = useState(data.nutri.notes ?? '');
   const auto = autoTargets({ ...data, nutri: { ...data.nutri, weightKg: parseNum(weight) || undefined } }, deficit);
   const hasGarminWeight = !!data.garmin?.weights.length;
 
   const save = () => {
-    if (mode === 'auto') setTargets({ mode, deficit, weightKg: parseNum(weight) || undefined, ...(auto.source !== 'aucune' ? { kcal: auto.kcal, p: auto.p, c: auto.c, f: auto.f } : {}) });
-    else setTargets({ mode, kcal: parseNum(kcal), p: parseNum(p), c: parseNum(c), f: parseNum(f) });
+    if (mode === 'auto') setTargets({ mode, deficit, notes, weightKg: parseNum(weight) || undefined, ...(auto.source !== 'aucune' ? { kcal: auto.kcal, p: auto.p, c: auto.c, f: auto.f } : {}) });
+    else setTargets({ mode, notes, kcal: parseNum(kcal), p: parseNum(p), c: parseNum(c), f: parseNum(f) });
     onClose();
   };
   return (
@@ -77,13 +78,13 @@ function TargetsSheet({ onClose }: { onClose: () => void }) {
       </View>
       {mode === 'auto' ? (
         <>
-          <Meta>Pour perdre du gras en gardant le muscle : ta dépense moins un déficit, protéines à 2 g par kilo, lipides à 0,8 g par kilo, le reste en glucides.</Meta>
+          <Meta>Ta dépense moins un éventuel déficit, protéines à 2 g par kilo, lipides à 0,8 g par kilo, le reste en glucides.</Meta>
           {!hasGarminWeight ? <Field label="Ton poids (kg)" value={weight} onChangeText={setWeight} keyboardType="decimal-pad" placeholder="80" /> : null}
           <View style={{ gap: 6 }}>
-            <Meta style={{ fontWeight: '600' }}>Déficit</Meta>
-            <View style={{ flexDirection: 'row', gap: 6 }}>
-              {[10, 15, 20].map((x) => (
-                <Chip key={x} label={`${x} %${x === 15 ? ' (conseillé)' : ''}`} active={deficit === x} onPress={() => setDeficit(x)} />
+            <Meta style={{ fontWeight: '600' }}>Objectif</Meta>
+            <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+              {([[0, 'Maintien'], [5, 'Recomposition (−5 %)'], [10, 'Perte douce (−10 %)'], [15, 'Perte (−15 %)']] as const).map(([x, l]) => (
+                <Chip key={x} label={l} active={deficit === x} onPress={() => setDeficit(x)} />
               ))}
             </View>
           </View>
@@ -113,7 +114,15 @@ function TargetsSheet({ onClose }: { onClose: () => void }) {
           </View>
         </>
       )}
-      <Meta style={{ fontSize: 13 }}>Repères généraux, pas un avis médical. Une perte de 0,5 à 1 % du poids par semaine est un bon rythme.</Meta>
+      <Field
+        label="Consignes pour le coach"
+        value={notes}
+        onChangeText={setNotes}
+        multiline
+        placeholder="Préférences, aliments à éviter, règles…"
+        style={{ minHeight: 90, textAlignVertical: 'top' }}
+      />
+      <Meta style={{ fontSize: 13 }}>Ce sont des repères, pas un avis médical ni une obligation : mange selon ta faim et regarde les tendances sur plusieurs semaines.</Meta>
       <Btn label="Enregistrer" onPress={save} />
     </Sheet>
   );
@@ -151,8 +160,8 @@ function DayView({ date, setDate }: { date: string; setDate: (d: string) => void
       <Card style={{ gap: 14 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <View>
-            <Text style={{ color: left < 0 ? t.bad : t.ink, fontSize: 34, fontWeight: '700', fontVariant: ['tabular-nums'] }}>{fmt(Math.round(Math.abs(left)))}</Text>
-            <Meta>{left < 0 ? 'kcal au-dessus de l\'objectif' : 'kcal restantes'}</Meta>
+            <Text style={{ color: t.ink, fontSize: 34, fontWeight: '700', fontVariant: ['tabular-nums'] }}>{fmt(Math.round(Math.abs(left)))}</Text>
+            <Meta>{left < 0 ? 'kcal au-dessus du repère, pas de souci' : 'kcal restantes'}</Meta>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             <Meta style={{ fontSize: 13 }}>Mangé {fmt(Math.round(eaten.kcal))}</Meta>
