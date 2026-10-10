@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useStore } from '../store';
 import { useTheme } from '../theme';
-import { Btn, Card, Meta, Plates, Sheet, Body, H2, useNav } from '../ui';
+import { Btn, Card, Chip, Field, Meta, Plates, Sheet, Body, H2, useNav } from '../ui';
+import { tipFor, ZONES } from '../tips';
+import { focusSession, getKey } from '../coach';
+import { EQUIP } from '../logic';
 import { fmt, goalFor, parseNum, sharedCount } from '../logic';
 import { chooseExercise, completeSet, currentIdx, fmtClock, nextSet, remaining } from '../session';
 import { buzz } from '../platform/buzz';
@@ -57,6 +60,12 @@ export function Focus({ onFinish }: { onFinish: () => void }) {
   const [repsSheet, setRepsSheet] = useState(false);
   const [reps, setReps] = useState(0);
   const [picker, setPicker] = useState(false);
+  const [techSheet, setTechSheet] = useState(false);
+  const [zoneSheet, setZoneSheet] = useState(false);
+  const [zone, setZone] = useState('');
+  const [zoneBusy, setZoneBusy] = useState(false);
+  const [zoneErr, setZoneErr] = useState('');
+  const abort = useRef<AbortController | null>(null);
 
   /* ---------- Séance terminée ---------- */
   if (ci < 0) {
@@ -65,6 +74,12 @@ export function Focus({ onFinish }: { onFinish: () => void }) {
         <Text style={{ color: t.good, fontSize: 48 }}>✓</Text>
         <H2>Tous les exercices sont faits</H2>
         <Meta style={{ textAlign: 'center' }}>Enregistre la séance pour mettre à jour ta progression et tes charges.</Meta>
+        {a.focus?.general ? (
+          <View style={{ alignSelf: 'stretch', gap: 4, backgroundColor: t.accentSoft, borderRadius: 12, padding: 14 }}>
+            <Meta style={{ fontSize: 13, color: t.accent, fontWeight: '600' }}>POUR FINIR · {a.focus.zone.toUpperCase()}</Meta>
+            <Body>{a.focus.general}</Body>
+          </View>
+        ) : null}
         <Btn label="Enregistrer la séance" onPress={onFinish} style={{ alignSelf: 'stretch' }} />
       </Card>
     );
@@ -94,6 +109,79 @@ export function Focus({ onFinish }: { onFinish: () => void }) {
     updateActive((x) => chooseExercise(x, idx));
     setPicker(false);
   };
+
+  const runZone = async (z: string) => {
+    const want = z.trim();
+    if (!want) return;
+    setZoneErr('');
+    const key = await getKey();
+    if (!key) {
+      setZoneErr('Ajoute ta clé OpenAI dans Réglages pour cette fonction.');
+      return;
+    }
+    setZoneBusy(true);
+    abort.current = new AbortController();
+    try {
+      const list = a.entries.map((x) => {
+        const xe = data.exercises[x.ex];
+        return { id: x.ex, name: xe?.name ?? x.name, desc: xe ? `${xe.muscle}, ${EQUIP[xe.equip]}, ${fmt(xe.load)} kg, ${x.sets.length}×${x.target}` : `${x.sets.length}×${x.target}` };
+      });
+      const res = await focusSession(key, data.settings.model, want, list, data.nutri?.notes ?? '', abort.current.signal);
+      updateActive((x) => ({ ...x, focus: { zone: want, ...res } }));
+      setZoneSheet(false);
+      buzz('tap');
+    } catch (err: any) {
+      if (err?.name !== 'AbortError') setZoneErr(err?.message ?? 'Erreur, réessaie.');
+    } finally {
+      setZoneBusy(false);
+    }
+  };
+  const tech = tipFor(ex?.name ?? e.name);
+  const zoneTip = a.focus?.tips[e.ex];
+
+  const zoneCard = a.focus ? (
+    <Card style={{ gap: 6, backgroundColor: t.accentSoft }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Meta style={{ fontSize: 13, color: t.accent, fontWeight: '600' }}>CIBLE : {a.focus.zone.toUpperCase()}</Meta>
+        <Pressable onPress={() => setZoneSheet(true)} hitSlop={8} accessibilityRole="button">
+          <Text style={{ color: t.accent, fontSize: 15 }}>Modifier</Text>
+        </Pressable>
+      </View>
+      <Body>{zoneTip ?? 'Pas de consigne pour cet exercice, fais-le normalement.'}</Body>
+    </Card>
+  ) : null;
+
+  const techSheetEl = (
+    <Sheet visible={techSheet} onClose={() => setTechSheet(false)}>
+      <H2>{ex?.name ?? e.name}</H2>
+      {tech ? (
+        <>
+          <Meta style={{ fontSize: 13 }}>POINTS CLÉS</Meta>
+          {tech.cues.map((c, k) => <Body key={k}>• {c}</Body>)}
+          <Meta style={{ fontSize: 13, marginTop: 6 }}>ERREURS FRÉQUENTES</Meta>
+          {tech.errors.map((c, k) => <Body key={k}>• {c}</Body>)}
+        </>
+      ) : (
+        <Meta>Pas de fiche pour cet exercice. Utilise « Cibler une zone » ou demande au coach.</Meta>
+      )}
+      <Meta style={{ fontSize: 13 }}>En cas de douleur (pas de simple fatigue musculaire), arrête l'exercice et demande l'avis d'un professionnel.</Meta>
+      <Btn kind="ghost" label="Fermer" onPress={() => setTechSheet(false)} />
+    </Sheet>
+  );
+
+  const zoneSheetEl = (
+    <Sheet visible={zoneSheet} onClose={() => { abort.current?.abort(); setZoneSheet(false); }}>
+      <H2>Cibler une zone</H2>
+      <Meta>Le coach adapte les exercices de la séance (prise, position, amplitude, tempo) sans changer de machine. Une consigne s'affiche sous chaque exercice.</Meta>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {ZONES.map((z) => <Chip key={z} label={z} active={zone === z} onPress={() => setZone(z)} />)}
+      </View>
+      <Field label="Ou décris ce que tu veux" value={ZONES.includes(zone) ? '' : zone} onChangeText={setZone} placeholder="ex. épaisseur du dos, lombaires" />
+      {zoneErr ? <Meta style={{ color: t.bad }}>{zoneErr}</Meta> : null}
+      {zoneBusy ? <ActivityIndicator color={t.accent} /> : <Btn label="Adapter la séance" onPress={() => runZone(zone)} />}
+      {a.focus && !zoneBusy ? <Btn kind="danger" label="Retirer la cible" onPress={() => { updateActive((x) => ({ ...x, focus: undefined })); setZoneSheet(false); }} /> : null}
+    </Sheet>
+  );
 
   const pickerSheet = (
     <Sheet visible={picker} onClose={() => setPicker(false)}>
@@ -164,10 +252,12 @@ export function Focus({ onFinish }: { onFinish: () => void }) {
           <Meta>
             Série {j + 1} sur {e.sets.length} · {fmt(kg)} kg · objectif {goal} reps
           </Meta>
+          {zoneTip ? <Meta style={{ color: t.accent }}>{a.focus?.zone} : {zoneTip}</Meta> : null}
           {rest.kind === 'ex' && others.length ? <Btn small kind="ghost" label="Machine occupée ? Changer d'exercice" onPress={() => setPicker(true)} style={{ alignSelf: 'flex-start', marginTop: 6 }} /> : null}
         </Card>
         <Btn label="Passer le repos" onPress={() => updateActive((x) => ({ ...x, rest: undefined }))} />
         {pickerSheet}
+        {zoneSheetEl}
       </View>
     );
   }
@@ -226,7 +316,14 @@ export function Focus({ onFinish }: { onFinish: () => void }) {
         </View>
       </Card>
 
+      {zoneCard}
+
       <Btn label="Série terminée" onPress={openReps} />
+
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        <Btn small kind="ghost" label="Technique" onPress={() => setTechSheet(true)} style={{ flex: 1 }} />
+        {!a.focus ? <Btn small kind="ghost" label="Cibler une zone" onPress={() => { setZoneErr(''); setZoneSheet(true); }} style={{ flex: 1 }} /> : null}
+      </View>
 
       {doneSets.length ? (
         <Card pad={false}>
@@ -268,6 +365,8 @@ export function Focus({ onFinish }: { onFinish: () => void }) {
         </Meta>
       </Sheet>
       {pickerSheet}
+      {techSheetEl}
+      {zoneSheetEl}
     </View>
   );
 }

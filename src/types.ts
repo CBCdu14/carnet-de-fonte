@@ -89,6 +89,8 @@ export interface Active {
   cur?: number;
   rest?: RestTimer;
   view?: 'focus' | 'list';
+  /** Zone ciblée pour la séance : consignes du coach par exercice (clé = id d'exercice) */
+  focus?: { zone: string; general: string; tips: Record<string, string> };
 }
 
 export interface Settings {

@@ -93,3 +93,50 @@ Recettes enregistrées : ${(d.recipes ?? []).map((r) => r.name).join(', ') || '(
 Derniers jours notés :
 ${recent || '(rien de noté)'}`;
 }
+
+/** Adapte les exercices de la séance à une zone à cibler (une seule requête pour toute la séance). */
+export async function focusSession(
+  apiKey: string,
+  model: string,
+  zone: string,
+  exercises: { id: string; name: string; desc: string }[],
+  notes: string,
+  signal?: AbortSignal,
+): Promise<{ general: string; tips: Record<string, string> }> {
+  const list = exercises.map((e, i) => `${i + 1}. ${e.name} (${e.desc})`).join('\n');
+  const prompt = `Tu es coach de musculation. Séance du jour, dans l'ordre :
+${list}
+
+L'utilisateur veut solliciter davantage : ${zone}.
+Pour chaque exercice, donne UNE consigne courte (25 mots maximum) pour orienter l'exercice vers cette zone SANS changer de machine ni d'exercice : position, prise, écartement, amplitude, tempo, contraction volontaire. Si l'exercice ne s'y prête pas, écris exactement "Pas d'adaptation utile, fais-le normalement."
+Ajoute "general" : 1 à 2 phrases, avec si pertinent UN exercice simple sans matériel lourd à ajouter en fin de séance (séries et répétitions).
+Sécurité : pour le bas du dos, privilégie le dos neutre, le gainage et les charges modérées, jamais de flexion du dos chargée. Pas d'avis médical.
+${notes ? `Consignes de l'utilisateur : ${notes}\n` : ''}Réponds uniquement en JSON : {"general":"…","tips":{"1":"consigne exercice 1","2":"…"}}`;
+  let res: Response;
+  try {
+    res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ model, response_format: { type: 'json_object' }, messages: [{ role: 'user', content: prompt }] }),
+      signal,
+    });
+  } catch (e: any) {
+    if (e?.name === 'AbortError') throw e;
+    throw new CoachError('Pas de connexion : réessaie quand tu captes.');
+  }
+  const body: any = await res.json().catch(() => null);
+  if (!res.ok) throw new CoachError(res.status === 401 ? 'Clé OpenAI refusée : vérifie-la dans Réglages.' : body?.error?.message ?? `Erreur OpenAI (${res.status}).`);
+  const text: string = body?.choices?.[0]?.message?.content ?? '';
+  let j: any;
+  try {
+    j = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
+  } catch {
+    throw new CoachError('Réponse illisible, réessaie.');
+  }
+  const tips: Record<string, string> = {};
+  exercises.forEach((e, i) => {
+    const t = j?.tips?.[String(i + 1)] ?? j?.tips?.[e.name];
+    if (t) tips[e.id] = String(t);
+  });
+  return { general: String(j?.general ?? ''), tips };
+}
