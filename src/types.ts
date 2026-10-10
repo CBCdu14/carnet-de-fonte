@@ -72,6 +72,46 @@ export interface Active {
 export interface Settings {
   restSec: number;
   model: string;
+  /** Dépôt GitHub privé des données Garmin, ex. "pseudo/carnet-data". */
+  garminRepo: string;
+}
+
+/* ---------- Données Garmin (fichier data/garmin.json du dépôt carnet-data) ---------- */
+export interface GarminDay {
+  date: string;
+  steps?: number;
+  kcal?: number;
+  activeKcal?: number;
+  bmrKcal?: number;
+  restingHr?: number;
+  sleepH?: number;
+  sleepScore?: number;
+  stress?: number;
+  bodyBattery?: number;
+}
+export interface GarminWeight {
+  date: string;
+  kg: number;
+  fatPct?: number;
+  muscleKg?: number;
+}
+export interface GarminActivity {
+  id: number | string;
+  date: string; // "YYYY-MM-DD HH:MM"
+  type: string;
+  name: string;
+  min?: number;
+  km?: number;
+  paceMinKm?: number;
+  kcal?: number;
+  avgHr?: number;
+}
+export interface GarminData {
+  updatedAt: string | null;
+  fetchedAt: number;
+  days: GarminDay[];
+  weights: GarminWeight[];
+  activities: GarminActivity[];
 }
 
 export interface Data {
@@ -80,6 +120,7 @@ export interface Data {
   logs: Log[];
   active: Active | null;
   settings: Settings;
+  garmin: GarminData | null;
 }
 
 export type Tab = 'seances' | 'seance' | 'exos' | 'progres' | 'coach' | 'reglages';

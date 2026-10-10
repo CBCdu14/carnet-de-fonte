@@ -5,6 +5,7 @@ import { useTheme } from '../theme';
 import { Btn, Card, Chip, Empty, H3, Header, LinkBtn, Meta, Screen, Body, useNav } from '../ui';
 import { exPoints, fDateL, fmt, logVolume, weeklyVolume } from '../logic';
 import { LoadChart, VolumeChart } from '../charts';
+import { Corps } from './Corps';
 
 export function Progres() {
   const t = useTheme();
@@ -19,10 +20,29 @@ export function Progres() {
   const ex = exId ? data.exercises[exId] : undefined;
   const pts = useMemo(() => (exId ? exPoints(data.logs, exId) : []), [data.logs, exId]);
   const weeks = useMemo(() => weeklyVolume(data.logs), [data.logs]);
+  const [view, setView] = useState<'muscu' | 'corps'>('muscu');
+  const seg = (
+    <View style={{ flexDirection: 'row', backgroundColor: t.sunk, borderRadius: 999, padding: 3 }}>
+      {(['muscu', 'corps'] as const).map((k) => (
+        <Pressable key={k} onPress={() => setView(k)} style={{ flex: 1, paddingVertical: 9, borderRadius: 999, backgroundColor: view === k ? t.surface : 'transparent', alignItems: 'center' }}>
+          <Text style={{ color: view === k ? t.ink : t.muted, fontWeight: '700', fontSize: 15 }}>{k === 'muscu' ? 'Musculation' : 'Corps & cardio'}</Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+  if (view === 'corps') {
+    return (
+      <Screen header={<Header eyebrow="Suivi" title="Progrès" />}>
+        {seg}
+        <Corps />
+      </Screen>
+    );
+  }
 
   if (!data.logs.length) {
     return (
       <Screen header={<Header eyebrow="Suivi" title="Progrès" />}>
+        {seg}
         <Empty
           title="Pas encore de séance enregistrée"
           text="Démarre une séance depuis l'onglet Séances et termine-la : tes courbes de charge, ton 1RM estimé et ton volume hebdo apparaîtront ici."
@@ -43,6 +63,7 @@ export function Progres() {
 
   return (
     <Screen header={<Header eyebrow="Suivi" title="Progrès" />}>
+      {seg}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
         {[...withData, ...exs.filter((e) => !withData.includes(e))].map((e) => (
           <Chip key={e.id} label={e.name} active={e.id === exId} onPress={() => setSel(e.id)} />

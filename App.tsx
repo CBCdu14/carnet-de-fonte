@@ -16,6 +16,7 @@ import { Exercices } from './src/screens/Exercices';
 import { Progres } from './src/screens/Progres';
 import { Coach } from './src/screens/Coach';
 import { Reglages } from './src/screens/Reglages';
+import { useGarminSync } from './src/useGarminSync';
 
 function TabIcon({ k, color }: { k: Tab; color: string }) {
   const s = { stroke: color, strokeWidth: 2, fill: 'none', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
@@ -40,6 +41,7 @@ function Shell() {
   const ins = useSafeAreaInsets();
   const { data } = useStore();
   const [tab, setTab] = useState<Tab>(data.active ? 'seance' : 'seances');
+  useGarminSync(true);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [restEnd, setRestEnd] = useState<number | null>(null);

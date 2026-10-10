@@ -1,6 +1,7 @@
 import { secret } from './platform/secret';
 import type { Data } from './types';
 import { EQUIP, dayStr, fmt, logVolume } from './logic';
+import { garminContext } from './garmin';
 
 const KEY = 'openai_api_key';
 export const getKey = () => secret.get(KEY);
@@ -32,7 +33,7 @@ SÉANCES TYPES
 ${wos || '(aucune)'}
 
 DERNIÈRES SÉANCES (la plus récente d'abord, charge×reps des séries validées)
-${logs || '(aucune séance enregistrée)'}`;
+${logs || '(aucune séance enregistrée)'}${garminContext(d.garmin)}`;
 }
 
 export const rules = (d: Data) =>

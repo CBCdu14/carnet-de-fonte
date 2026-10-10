@@ -5,6 +5,9 @@ import Constants from 'expo-constants';
 import { useStore } from '../store';
 import { Btn, Card, Chip, Field, H3, Header, Meta, Screen, Body, useNav } from '../ui';
 import { getKey, setKey } from '../coach';
+import { getGhToken, setGhToken } from '../garmin';
+import { useGarminSync } from '../useGarminSync';
+import { fDateL } from '../logic';
 import { dayStr } from '../logic';
 import type { Data } from '../types';
 
@@ -19,10 +22,40 @@ export function Reglages() {
   const [hasKey, setHasKey] = useState(false);
   const [model, setModel] = useState(data.settings.model);
   const [pending, setPending] = useState<Pick<Data, 'exercises' | 'workouts' | 'logs'> | null>(null);
+  const [repo, setRepo] = useState(data.settings.garminRepo);
+  const [gh, setGh] = useState('');
+  const [hasGh, setHasGh] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const syncGarmin = useGarminSync();
 
   useEffect(() => {
     getKey().then((k) => setHasKey(!!k)).catch(() => {});
+    getGhToken().then((k) => setHasGh(!!k)).catch(() => {});
   }, []);
+
+  const saveGarmin = async () => {
+    const r = repo.trim().replace(/^https?:\/\/github\.com\//, '').replace(/\/$/, '');
+    if (!/^[\w.-]+\/[\w.-]+$/.test(r)) return toast('Dépôt attendu au format pseudo/carnet-data.');
+    setRepo(r);
+    setSettings({ garminRepo: r });
+    if (gh.trim()) {
+      await setGhToken(gh.trim());
+      setGh('');
+      setHasGh(true);
+    }
+    toast('Garmin configuré, synchro…');
+  };
+  const runSync = async () => {
+    setSyncing(true);
+    const err = await syncGarmin();
+    setSyncing(false);
+    toast(err ?? 'Données Garmin à jour');
+  };
+  // Lance la synchro quand le dépôt vient d'être enregistré
+  useEffect(() => {
+    if (data.settings.garminRepo && hasGh && !data.garmin) runSync();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.settings.garminRepo, hasGh]);
 
   const saveKey = async () => {
     const k = key.trim();
@@ -92,6 +125,29 @@ export function Reglages() {
         </View>
         <Field label="Modèle" value={model} onChangeText={setModel} autoCapitalize="none" autoCorrect={false} onEndEditing={() => model.trim() && setSettings({ model: model.trim() })} />
         <Meta>Par défaut gpt-5-mini (rapide et bon marché). Tu peux mettre un autre modèle de ton compte OpenAI.</Meta>
+      </Card>
+
+      <Card>
+        <H3>Garmin (montre et balance)</H3>
+        <Meta>
+          {data.garmin
+            ? `Dernières données Garmin : ${data.garmin.updatedAt ? fDateL(data.garmin.updatedAt) : '?'} · ${data.garmin.days.length} jours, ${data.garmin.weights.length} pesées, ${data.garmin.activities.length} activités.`
+            : 'Tes données Garmin sont récupérées chaque nuit dans ton dépôt GitHub privé carnet-data (voir son README). Renseigne-le ici avec un jeton GitHub en lecture seule.'}
+        </Meta>
+        <Field label="Dépôt GitHub privé" value={repo} onChangeText={setRepo} placeholder="pseudo/carnet-data" autoCapitalize="none" autoCorrect={false} />
+        <Field
+          label={hasGh ? 'Remplacer le jeton GitHub' : 'Jeton GitHub (lecture seule)'}
+          value={gh}
+          onChangeText={setGh}
+          placeholder="github_pat_…"
+          autoCapitalize="none"
+          autoCorrect={false}
+          secureTextEntry
+        />
+        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+          <Btn small label="Enregistrer" onPress={saveGarmin} disabled={!repo.trim() || (!hasGh && !gh.trim())} />
+          {data.settings.garminRepo && hasGh ? <Btn small kind="ghost" label={syncing ? 'Synchro…' : 'Synchroniser maintenant'} onPress={runSync} disabled={syncing} /> : null}
+        </View>
       </Card>
 
       <Card>
