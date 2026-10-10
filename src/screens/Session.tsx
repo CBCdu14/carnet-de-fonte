@@ -19,9 +19,21 @@ function useElapsed(start: number) {
 
 export function Session() {
   const t = useTheme();
-  const { data, changeLoad, updateActive } = useStore();
-  const { toast, startRest } = useNav();
+  const { data, changeLoad, updateActive, abandonWorkout } = useStore();
+  const { toast, startRest, go } = useNav();
   const [finish, setFinish] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  useEffect(() => {
+    if (!confirmCancel) return;
+    const tm = setTimeout(() => setConfirmCancel(false), 4000);
+    return () => clearTimeout(tm);
+  }, [confirmCancel]);
+  const cancel = () => {
+    if (!confirmCancel) return setConfirmCancel(true);
+    abandonWorkout();
+    go('seances');
+    toast('Séance annulée, rien n\'a été enregistré');
+  };
   const a = data.active!;
   const elapsed = useElapsed(a.startedAt);
 
@@ -74,7 +86,10 @@ export function Session() {
             </Eyebrow>
             <H1>{a.name}</H1>
           </View>
-          <Btn small label="Terminer" onPress={() => setFinish(true)} />
+          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+            <Btn small kind={confirmCancel ? 'danger' : 'ghost'} label={confirmCancel ? 'Confirmer' : 'Annuler'} onPress={cancel} />
+            <Btn small label="Terminer" onPress={() => setFinish(true)} />
+          </View>
         </View>
       }
     >
