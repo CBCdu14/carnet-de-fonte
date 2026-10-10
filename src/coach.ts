@@ -1,10 +1,10 @@
-import * as SecureStore from 'expo-secure-store';
+import { secret } from './platform/secret';
 import type { Data } from './types';
 import { EQUIP, dayStr, fmt, logVolume } from './logic';
 
 const KEY = 'openai_api_key';
-export const getKey = () => SecureStore.getItemAsync(KEY);
-export const setKey = (k: string) => (k ? SecureStore.setItemAsync(KEY, k) : SecureStore.deleteItemAsync(KEY));
+export const getKey = () => secret.get(KEY);
+export const setKey = (k: string) => (k ? secret.set(KEY, k) : secret.remove(KEY));
 
 export function dataContext(d: Data) {
   const name = (id: string, fb: string) => d.exercises[id]?.name ?? fb;

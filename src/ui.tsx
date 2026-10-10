@@ -13,7 +13,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { buzz } from './platform/buzz';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Theme, useTheme } from './theme';
 import type { Exercise, Tab } from './types';
@@ -211,7 +211,7 @@ export function Field(props: TextInputProps & { label?: string }) {
 export function LoadCtl({ ex, onChange }: { ex: Exercise; onChange: (dir: 1 | -1) => void }) {
   const t = useTheme();
   const tap = (dir: 1 | -1) => {
-    Haptics.selectionAsync().catch(() => {});
+    buzz('tick');
     onChange(dir);
   };
   const b = (dir: 1 | -1, label: string, a11y: string) => (

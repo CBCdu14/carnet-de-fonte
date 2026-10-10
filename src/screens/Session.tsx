@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { buzz } from '../platform/buzz';
 import { useStore } from '../store';
 import { useTheme } from '../theme';
 import { Btn, Card, Eyebrow, H1, H2, LinkBtn, LoadCtl, Meta, Plates, Screen, useNav } from '../ui';
@@ -37,7 +37,7 @@ export function Session() {
       entries: x.entries.map((e, ei) => (ei !== i ? e : { ...e, sets: e.sets.map((s, sj) => (sj !== j ? s : { ...s, done: !s.done })) })),
     }));
     if (!wasDone) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      buzz('tap');
       startRest();
     }
   };

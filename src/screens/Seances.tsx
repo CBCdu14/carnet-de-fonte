@@ -28,8 +28,14 @@ export function Seances() {
   const gear = (
     <Pressable onPress={() => go('reglages')} accessibilityLabel="Réglages" hitSlop={8} style={{ padding: 6 }}>
       <Svg width={24} height={24} viewBox="0 0 24 24">
-        <Circle cx={12} cy={12} r={3.2} stroke={t.ink} strokeWidth={2} fill="none" />
-        <Path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke={t.ink} strokeWidth={2} strokeLinecap="round" />
+        <Path
+          d="M10.3 2.5h3.4l.5 2.6 1.9.8 2.2-1.5 2.4 2.4-1.5 2.2.8 1.9 2.6.5v3.4l-2.6.5-.8 1.9 1.5 2.2-2.4 2.4-2.2-1.5-1.9.8-.5 2.6h-3.4l-.5-2.6-1.9-.8-2.2 1.5-2.4-2.4 1.5-2.2-.8-1.9-2.6-.5v-3.4l2.6-.5.8-1.9-1.5-2.2 2.4-2.4 2.2 1.5 1.9-.8z"
+          stroke={t.ink}
+          strokeWidth={1.8}
+          strokeLinejoin="round"
+          fill="none"
+        />
+        <Circle cx={12} cy={12} r={3} stroke={t.ink} strokeWidth={1.8} fill="none" />
       </Svg>
     </Pressable>
   );

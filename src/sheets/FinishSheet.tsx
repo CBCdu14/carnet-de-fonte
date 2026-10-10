@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { buzz } from '../platform/buzz';
 import { useStore } from '../store';
 import { useTheme } from '../theme';
-import { Btn, Field, H2, H3, Meta, Sheet, Body, useNav } from '../ui';
+import { Btn, Field, H2, H3, LinkBtn, Meta, Sheet, Body, useNav } from '../ui';
 import { fmt, parseNum, proposals } from '../logic';
 
 export function FinishSheet({ onClose }: { onClose: () => void }) {
@@ -24,7 +24,7 @@ export function FinishSheet({ onClose }: { onClose: () => void }) {
   const save = () => {
     const apply = props.filter((_, k) => on[k]).map((p) => ({ ex: p.ex, nv: p.nv }));
     finishWorkout(note.trim(), apply);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    buzz('success');
     onClose();
     go('progres');
     toast(apply.length ? `Séance enregistrée · ${apply.length} charge${apply.length > 1 ? 's' : ''} mise${apply.length > 1 ? 's' : ''} à jour` : 'Séance enregistrée');
@@ -70,11 +70,14 @@ export function FinishSheet({ onClose }: { onClose: () => void }) {
       ) : null}
       <Field label="Note (optionnel)" value={note} onChangeText={setNote} placeholder="Sensations, sommeil, douleur…" multiline style={{ minHeight: 64, textAlignVertical: 'top' }} />
       {!doneSets ? <Meta>Valide au moins une série (✓) pour enregistrer.</Meta> : null}
-      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-        <Btn
-          kind={confirmAb ? 'danger' : 'ghost'}
-          style={{ marginRight: 'auto' }}
-          label={confirmAb ? "Confirmer l'abandon" : 'Abandonner'}
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <Btn kind="ghost" label="Continuer" onPress={onClose} style={{ flex: 1 }} />
+        <Btn label="Enregistrer" onPress={save} disabled={!doneSets} style={{ flex: 1 }} />
+      </View>
+      <View style={{ alignItems: 'center' }}>
+        <LinkBtn
+          color={t.bad}
+          label={confirmAb ? "Confirmer l'abandon de la séance" : 'Abandonner la séance'}
           onPress={() => {
             if (!confirmAb) return setConfirmAb(true);
             onClose();
@@ -83,8 +86,6 @@ export function FinishSheet({ onClose }: { onClose: () => void }) {
             toast('Séance abandonnée');
           }}
         />
-        <Btn kind="ghost" label="Continuer" onPress={onClose} />
-        <Btn label="Enregistrer" onPress={save} disabled={!doneSets} />
       </View>
     </Sheet>
   );

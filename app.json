@@ -8,7 +8,9 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#101315",
-    "runtimeVersion": { "policy": "appVersion" },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -17,8 +19,12 @@
     "ios": {
       "bundleIdentifier": "com.paulcaraty.carnetdefonte",
       "supportsTablet": false,
-      "config": { "usesNonExemptEncryption": false },
-      "infoPlist": { "ITSAppUsesNonExemptEncryption": false }
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.paulcaraty.carnetdefonte",
@@ -31,12 +37,23 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "output": "single",
+      "name": "Carnet de Fonte",
+      "shortName": "Fonte",
+      "lang": "fr",
+      "themeColor": "#15191B",
+      "backgroundColor": "#15191B",
+      "display": "standalone",
+      "orientation": "portrait"
     },
     "plugins": [
       "expo-sqlite",
       "expo-secure-store",
       "expo-sharing"
-    ]
+    ],
+    "experiments": {
+      "baseUrl": "/carnet-de-fonte"
+    }
   }
 }

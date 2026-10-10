@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
-import Storage from 'expo-sqlite/kv-store';
+import { kv } from './platform/storage';
 import type { Active, Data, Exercise, Log, Settings, Workout } from './types';
 import { dayStr, parseNum, r2, uid } from './logic';
 import { seedExercises, seedWorkouts } from './seed';
@@ -18,7 +18,7 @@ export const DEFAULT_SETTINGS: Settings = { restSec: 90, model: 'gpt-5-mini' };
 
 async function readJSON<T>(key: string): Promise<T | null> {
   try {
-    const s = await Storage.getItemAsync(key);
+    const s = await kv.get(key);
     return s ? (JSON.parse(s) as T) : null;
   } catch {
     return null;
@@ -99,8 +99,8 @@ export function StoreProvider({ children, fallback }: { children: React.ReactNod
       if (saved.current[k] === d[k]) continue;
       saved.current[k] = d[k];
       try {
-        if (d[k] == null) await Storage.removeItemAsync(K[k]);
-        else await Storage.setItemAsync(K[k], JSON.stringify(d[k]));
+        if (d[k] == null) await kv.remove(K[k]);
+        else await kv.set(K[k], JSON.stringify(d[k]));
       } catch (e) {
         saved.current[k] = undefined; // réessai au prochain changement
       }

@@ -2,8 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, AppState, Pressable, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useKeepAwake } from 'expo-keep-awake';
-import * as Haptics from 'expo-haptics';
+import { KeepAwake } from './src/platform/keepAwake';
+import { buzz } from './src/platform/buzz';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { StoreProvider, useStore } from './src/store';
 import { useTheme } from './src/theme';
@@ -16,11 +16,6 @@ import { Exercices } from './src/screens/Exercices';
 import { Progres } from './src/screens/Progres';
 import { Coach } from './src/screens/Coach';
 import { Reglages } from './src/screens/Reglages';
-
-function KeepAwake() {
-  useKeepAwake();
-  return null;
-}
 
 function TabIcon({ k, color }: { k: Tab; color: string }) {
   const s = { stroke: color, strokeWidth: 2, fill: 'none', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
@@ -70,7 +65,7 @@ function Shell() {
   useEffect(() => {
     if (restEnd && now >= restEnd) {
       setRestEnd(null);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+      buzz('alert');
       toast('Repos terminé : série suivante');
     }
   }, [now, restEnd, toast]);

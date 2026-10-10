@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View } from 'react-native';
-import { File, Paths } from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
-import * as DocumentPicker from 'expo-document-picker';
+import { Platform, View } from 'react-native';
+import { exportBackup, pickBackup } from '../platform/backup';
 import Constants from 'expo-constants';
 import { useStore } from '../store';
 import { Btn, Card, Chip, Field, H3, Header, Meta, Screen, Body, useNav } from '../ui';
@@ -37,12 +35,9 @@ export function Reglages() {
 
   const exportData = async () => {
     try {
-      const f = new File(Paths.cache, `carnet-de-fonte-${dayStr(new Date())}.json`);
-      if (f.exists) f.delete();
-      f.create();
-      f.write(JSON.stringify({ app: 'carnet-de-fonte', version: 1, exportedAt: new Date().toISOString(), exercises: data.exercises, workouts: data.workouts, logs: data.logs }, null, 1));
-      if (!(await Sharing.isAvailableAsync())) return toast("Le partage n'est pas disponible sur cet appareil.");
-      await Sharing.shareAsync(f.uri, { mimeType: 'application/json', dialogTitle: 'Sauvegarder mon carnet', UTI: 'public.json' });
+      const json = JSON.stringify({ app: 'carnet-de-fonte', version: 1, exportedAt: new Date().toISOString(), exercises: data.exercises, workouts: data.workouts, logs: data.logs }, null, 1);
+      const err = await exportBackup(`carnet-de-fonte-${dayStr(new Date())}.json`, json);
+      if (err) toast(err);
     } catch {
       toast("L'export a échoué, réessaie.");
     }
@@ -50,9 +45,9 @@ export function Reglages() {
 
   const importData = async () => {
     try {
-      const r = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/plain', '*/*'], copyToCacheDirectory: true });
-      if (r.canceled) return;
-      const json = JSON.parse(await new File(r.assets[0].uri).text());
+      const text = await pickBackup();
+      if (text == null) return;
+      const json = JSON.parse(text);
       if (!validBackup(json)) return toast("Ce fichier n'est pas une sauvegarde du carnet.");
       setPending(json);
     } catch {
@@ -66,7 +61,9 @@ export function Reglages() {
         <H3>Coach ChatGPT</H3>
         <Meta>
           {hasKey
-            ? 'Une clé OpenAI est enregistrée (chiffrée dans le trousseau du téléphone).'
+            ? Platform.OS === 'web'
+              ? 'Une clé OpenAI est enregistrée sur ce téléphone, dans les données de l\'appli.'
+              : 'Une clé OpenAI est enregistrée (chiffrée dans le trousseau du téléphone).'
             : 'Crée une clé sur platform.openai.com → API keys, ajoute un peu de crédit, puis colle-la ici.'}
         </Meta>
         <Field

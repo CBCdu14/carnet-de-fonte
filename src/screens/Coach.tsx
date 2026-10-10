@@ -98,7 +98,7 @@ export function Coach() {
         {hasKey === false ? (
           <Card>
             <H3>Connecte ton compte OpenAI</H3>
-            <Meta>Le coach utilise l'API OpenAI avec ta propre clé. Elle reste chiffrée sur ce téléphone. Chaque question coûte environ un centime ou moins.</Meta>
+            <Meta>Le coach utilise l'API OpenAI avec ta propre clé, qui reste sur ce téléphone. Chaque question coûte environ un centime ou moins.</Meta>
             <Btn label="Ajouter ma clé dans Réglages" onPress={() => go('reglages')} />
           </Card>
         ) : null}

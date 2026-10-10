@@ -38,6 +38,7 @@ export function LoadChart({ pts }: { pts: Point[] }) {
           {pts.length > 1 ? <Path d={`${path('kg')}L${x(t1)},${H - B}L${x(t0)},${H - B}Z`} fill={t.accent} fillOpacity={0.12} /> : null}
           <Path d={path('e1')} fill="none" stroke={t.muted} strokeWidth={2} strokeDasharray="5 4" />
           <Path d={path('kg')} fill="none" stroke={t.accent} strokeWidth={2.5} strokeLinejoin="round" />
+          {pts.map((p, i) => <Circle key={'e' + i} cx={x(p.t)} cy={y(p.e1)} r={3} fill={t.surface} stroke={t.muted} strokeWidth={1.5} />)}
           {pts.map((p, i) => <Circle key={i} cx={x(p.t)} cy={y(p.kg)} r={3.5} fill={t.accent} />)}
           <Circle cx={lx} cy={y(last.kg)} r={6} fill={t.accent} stroke={t.surface} strokeWidth={2} />
           <SvgText x={end ? lx - 10 : lx + 10} y={y(last.kg) - 10} fontSize={14} fontWeight="700" fill={t.ink} textAnchor={end ? 'end' : 'start'}>
