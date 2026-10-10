@@ -18,7 +18,7 @@ function nextWorkout(workouts: Workout[], lastId?: string) {
 const ago = (iso?: string) => {
   if (!iso) return 'pas encore faite';
   const d = Math.floor((Date.now() - new Date(iso).getTime()) / 864e5);
-  return d <= 0 ? "faite aujourd'hui" : d === 1 ? 'faite hier' : d < 7 ? `il y a ${d} jours` : `le ${fDate(iso)}`;
+  return d <= 0 ? "faite aujourd'hui" : d === 1 ? 'faite hier' : d < 7 ? `faite il y a ${d} jours` : `dernière fois le ${fDate(iso)}`;
 };
 
 function Badge({ name }: { name: string }) {
