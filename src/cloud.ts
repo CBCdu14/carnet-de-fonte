@@ -1,16 +1,20 @@
 /* Synchro entre appareils : un fichier data/carnet.json dans le dépôt GitHub privé (carnet-data). */
-import type { Data, Exercise, Log, Workout } from './types';
+import type { Data, DayPlan, Exercise, Food, Log, NutriTargets, Recipe, Workout } from './types';
 
 export interface Payload {
   exercises: Record<string, Exercise>;
   workouts: Workout[];
   logs: Log[];
   tomb: Record<string, number>;
+  foods?: Food[];
+  recipes?: Recipe[];
+  days?: DayPlan[];
+  nutri?: NutriTargets;
 }
 
 const PATH = 'data/carnet.json';
 
-export const toPayload = (d: Data): Payload => ({ exercises: d.exercises, workouts: d.workouts, logs: d.logs, tomb: d.meta.tomb });
+export const toPayload = (d: Data): Payload => ({ exercises: d.exercises, workouts: d.workouts, logs: d.logs, tomb: d.meta.tomb, foods: d.foods, recipes: d.recipes, days: d.days, nutri: d.nutri });
 
 /** Fusion : pour chaque élément, la version modifiée le plus récemment gagne ; une suppression gagne si elle est plus récente. */
 export function merge(a: Payload, b: Payload): Payload {
@@ -29,10 +33,14 @@ export function merge(a: Payload, b: Payload): Payload {
   for (const e of pick(Object.values(a.exercises), Object.values(b.exercises || {})).sort((x, y) => x.id.localeCompare(y.id))) exercises[e.id] = e;
   const workouts = pick(a.workouts, b.workouts || []).sort((x, y) => x.order - y.order || x.id.localeCompare(y.id));
   const logs = pick(a.logs, b.logs || []).sort((x, y) => y.date.localeCompare(x.date) || x.id.localeCompare(y.id));
+  const foods = pick(a.foods ?? [], b.foods ?? []).sort((x, y) => x.id.localeCompare(y.id));
+  const recipes = pick(a.recipes ?? [], b.recipes ?? []).sort((x, y) => x.id.localeCompare(y.id));
+  const days = pick(a.days ?? [], b.days ?? []).sort((x, y) => x.id.localeCompare(y.id));
+  const nutri = !a.nutri ? b.nutri : !b.nutri ? a.nutri : (b.nutri.u ?? 0) > (a.nutri.u ?? 0) ? b.nutri : a.nutri;
   // Les suppressions de plus de 6 mois sont oubliées
   const old = Date.now() - 183 * 864e5;
   for (const k of Object.keys(tomb)) if (tomb[k] < old) delete tomb[k];
-  return { exercises, workouts, logs, tomb };
+  return { exercises, workouts, logs, tomb, foods, recipes, days, ...(nutri ? { nutri } : {}) };
 }
 
 /** Représentation stable pour savoir si deux versions sont identiques. */
@@ -45,6 +53,10 @@ export function canon(p: Payload) {
       workouts: [...p.workouts].sort((x, y) => x.id.localeCompare(y.id)),
       logs: [...p.logs].sort((x, y) => x.id.localeCompare(y.id)),
       tomb: p.tomb,
+      foods: [...(p.foods ?? [])].sort((x, y) => x.id.localeCompare(y.id)),
+      recipes: [...(p.recipes ?? [])].sort((x, y) => x.id.localeCompare(y.id)),
+      days: [...(p.days ?? [])].sort((x, y) => x.id.localeCompare(y.id)),
+      nutri: p.nutri ?? null,
     }),
   );
 }
@@ -87,7 +99,7 @@ async function getRemote(repo: string, token: string): Promise<{ sha: string; pa
     b64 = (await r.json()).content;
   }
   const p = JSON.parse(b64dec(b64));
-  return { sha: j.sha, payload: { exercises: p.exercises ?? {}, workouts: p.workouts ?? [], logs: p.logs ?? [], tomb: p.tomb ?? {} } };
+  return { sha: j.sha, payload: { exercises: p.exercises ?? {}, workouts: p.workouts ?? [], logs: p.logs ?? [], tomb: p.tomb ?? {}, foods: p.foods ?? [], recipes: p.recipes ?? [], days: p.days ?? [], ...(p.nutri ? { nutri: p.nutri } : {}) } };
 }
 
 async function putRemote(repo: string, token: string, p: Payload, sha?: string): Promise<'ok' | 'conflict'> {
@@ -114,7 +126,13 @@ export async function syncData(repo: string, token: string | null, local: Payloa
     const remote = await getRemote(repo, token);
     if (!remote && pristine) return local; // rien à récupérer, et on n'envoie pas le programme d'exemple
     // Appareil neuf avec le programme d'exemple : on prend directement les données du compte
-    const merged = remote && pristine ? merge(remote.payload, { exercises: {}, workouts: [], logs: [], tomb: {} }) : remote ? merge(local, remote.payload) : local;
+    // (on garde quand même ses recettes de départ et ses réglages nutrition)
+    const merged =
+      remote && pristine
+        ? merge(remote.payload, { exercises: {}, workouts: [], logs: [], tomb: {}, foods: local.foods, recipes: local.recipes, days: local.days, nutri: local.nutri })
+        : remote
+          ? merge(local, remote.payload)
+          : local;
     if (remote && canon(merged) === canon(remote.payload)) return merged;
     const r = await putRemote(repo, token, merged, remote?.sha);
     if (r === 'ok') return merged;

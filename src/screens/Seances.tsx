@@ -211,6 +211,20 @@ export function Seances() {
         </>
       )}
 
+      {data.workouts.length ? (
+        <Card pad={false}>
+          <Pressable onPress={() => go('exos')} accessibilityRole="button">
+            {({ pressed }) => (
+              <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, backgroundColor: pressed ? t.sunk : 'transparent' }}>
+                <Body style={{ flex: 1 }}>Exercices et charges</Body>
+                <Meta style={{ marginRight: 8 }}>{Object.keys(data.exercises).length}</Meta>
+                <Text style={{ color: t.muted, fontSize: 22, fontWeight: '300' }}>›</Text>
+              </View>
+            )}
+          </Pressable>
+        </Card>
+      ) : null}
+
       {data.workouts.length > 0 && !data.logs.length ? (
         <Hint>Touche une séance pour voir ses exercices et ajuster les charges. Une charge modifiée change dans toutes les séances qui utilisent l'exercice.</Hint>
       ) : null}

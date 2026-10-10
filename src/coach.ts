@@ -2,6 +2,7 @@ import { secret } from './platform/secret';
 import type { Data } from './types';
 import { EQUIP, dayStr, fmt, logVolume } from './logic';
 import { garminContext } from './garmin';
+import { SLOTS, dayMacros, effectiveTargets, itemLabel } from './nutrition/calc';
 
 const KEY = 'openai_api_key';
 export const getKey = () => secret.get(KEY);
@@ -33,11 +34,11 @@ SÉANCES TYPES
 ${wos || '(aucune)'}
 
 DERNIÈRES SÉANCES (la plus récente d'abord, charge×reps des séries validées)
-${logs || '(aucune séance enregistrée)'}${garminContext(d.garmin)}`;
+${logs || '(aucune séance enregistrée)'}${garminContext(d.garmin)}${nutritionContext(d)}`;
 }
 
 export const rules = (d: Data) =>
-  `Tu es le coach de musculation de l'utilisateur, intégré à son carnet d'entraînement. Réponds en français, de façon concrète et directe, en t'appuyant sur ses données ci-dessous (charges en kg ; la charge de travail d'un exercice est la même dans toutes ses séances). Reste court (environ 200 mots maximum) sauf s'il demande un programme détaillé. N'utilise pas de tableaux. Quand tu proposes de changer une charge, écris-le sur une ligne au format « Exercice : X kg → Y kg ». Tu ne donnes pas d'avis médical : en cas de douleur, conseille de consulter.
+  `Tu es le coach de musculation et de nutrition de l'utilisateur, intégré à son carnet d'entraînement. Son objectif actuel : réduire son taux de graisse en gardant son muscle. Réponds en français, de façon concrète et directe, en t'appuyant sur ses données ci-dessous (charges en kg ; la charge de travail d'un exercice est la même dans toutes ses séances). Reste court (environ 200 mots maximum) sauf s'il demande un programme détaillé. N'utilise pas de tableaux. Quand tu proposes de changer une charge, écris-le sur une ligne au format « Exercice : X kg → Y kg ». Tu ne donnes pas d'avis médical : en cas de douleur, conseille de consulter.
 
 ${dataContext(d)}`;
 
@@ -68,4 +69,26 @@ export async function askOpenAI(apiKey: string, model: string, system: string, c
   const text: string | undefined = body?.choices?.[0]?.message?.content;
   if (!text) throw new CoachError('Réponse vide, réessaie.');
   return text.trim();
+}
+
+function nutritionContext(d: Data) {
+  if (!d.days?.length && !d.nutri) return '';
+  const n = effectiveTargets(d);
+  const recent = [...(d.days ?? [])]
+    .sort((a, b) => b.id.localeCompare(a.id))
+    .slice(0, 5)
+    .map((day) => {
+      const m = dayMacros(day, 'eaten', d);
+      const meals = SLOTS.flatMap((s) => (day.eaten[s.id] ?? []).map((it) => itemLabel(it, d))).join(', ');
+      return m.kcal ? `- ${day.id} : ${Math.round(m.kcal)} kcal, P ${Math.round(m.p)} g, G ${Math.round(m.c)} g, L ${Math.round(m.f)} g (${meals})` : '';
+    })
+    .filter(Boolean)
+    .join('\n');
+  return `
+
+NUTRITION (objectif : perte de gras)
+Objectifs du jour : ${Math.round(n.kcal)} kcal, protéines ${Math.round(n.p)} g, glucides ${Math.round(n.c)} g, lipides ${Math.round(n.f)} g
+Recettes enregistrées : ${(d.recipes ?? []).map((r) => r.name).join(', ') || '(aucune)'}
+Derniers jours notés :
+${recent || '(rien de noté)'}`;
 }

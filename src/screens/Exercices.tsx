@@ -10,7 +10,7 @@ import { ExerciseSheet } from '../sheets/ExerciseSheet';
 export function Exercices() {
   const t = useTheme();
   const { data, changeLoad } = useStore();
-  const { toast } = useNav();
+  const { toast, go } = useNav();
   const [edit, setEdit] = useState<string | null | undefined>(undefined);
   const list = Object.values(data.exercises);
   const groups: Record<string, Exercise[]> = {};
@@ -24,7 +24,7 @@ export function Exercices() {
   };
 
   return (
-    <Screen header={<Header title="Exercices" right={<NavBtn label="Ajouter" onPress={() => setEdit(null)} />} />}>
+    <Screen header={<Header title="Exercices" left={<NavBtn label="‹ Séances" onPress={() => go('seances')} />} right={<NavBtn label="Ajouter" onPress={() => setEdit(null)} />} />}>
       {!list.length ? (
         <Empty title="Catalogue vide" text="Ajoute tes exercices avec leur charge de travail. Une même charge sert dans toutes tes séances." action={<Btn label="Ajouter un exercice" onPress={() => setEdit(null)} />} />
       ) : (

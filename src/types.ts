@@ -149,6 +149,10 @@ export interface Data {
   settings: Settings;
   garmin: GarminData | null;
   meta: SyncMeta;
+  foods: Food[];
+  recipes: Recipe[];
+  days: DayPlan[];
+  nutri: NutriTargets;
 }
 
 export interface SyncMeta {
@@ -164,4 +168,68 @@ export interface SyncMeta {
   lastError?: string;
 }
 
-export type Tab = 'seances' | 'seance' | 'exos' | 'progres' | 'coach' | 'reglages';
+export type Tab = 'seances' | 'seance' | 'exos' | 'progres' | 'nutrition' | 'coach' | 'reglages';
+
+/* ---------- Nutrition ---------- */
+/** Valeurs pour 100 g. */
+export interface Food {
+  id: string;
+  name: string;
+  kcal: number;
+  p: number;
+  c: number;
+  f: number;
+  /** Portion pratique (1 œuf, 1 tranche…) */
+  unit?: { name: string; g: number };
+  cat?: string;
+  u?: number;
+}
+export interface Ingredient {
+  food: string;
+  g: number;
+}
+export interface Recipe {
+  id: string;
+  name: string;
+  servings: number;
+  minutes: number;
+  tags: string[];
+  ingredients: Ingredient[];
+  steps: string;
+  u?: number;
+}
+export type Slot = 'pdj' | 'dej' | 'col' | 'din';
+export interface MealItem {
+  id: string;
+  kind: 'recipe' | 'food' | 'quick';
+  /** id de recette ou d'aliment */
+  ref?: string;
+  /** recette : portions ; aliment : grammes */
+  qty: number;
+  /** repas rapide / dehors */
+  label?: string;
+  kcal?: number;
+  p?: number;
+  c?: number;
+  f?: number;
+  /** Aliment trouvé en ligne : copie de ses valeurs */
+  food?: Food;
+}
+export interface DayPlan {
+  id: string; // YYYY-MM-DD
+  plan: Partial<Record<Slot, MealItem[]>>;
+  eaten: Partial<Record<Slot, MealItem[]>>;
+  u?: number;
+}
+export interface NutriTargets {
+  kcal: number;
+  p: number;
+  c: number;
+  f: number;
+  mode: 'auto' | 'manual';
+  /** Déficit visé en mode auto (%) */
+  deficit: number;
+  /** Poids saisi si pas de balance Garmin */
+  weightKg?: number;
+  u?: number;
+}

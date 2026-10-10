@@ -17,6 +17,7 @@ import { Exercices } from './src/screens/Exercices';
 import { Progres } from './src/screens/Progres';
 import { Coach } from './src/screens/Coach';
 import { Reglages } from './src/screens/Reglages';
+import { Nutrition } from './src/screens/Nutrition';
 import { useGarminSync } from './src/useGarminSync';
 import { useCloudSync } from './src/useCloudSync';
 
@@ -36,6 +37,7 @@ function TabIcon({ k, color }: { k: Tab; color: string }) {
       ) : null}
       {k === 'exos' ? <Path d="M4 6h16M4 12h16M4 18h10" {...s} /> : null}
       {k === 'progres' ? <Path d="M3 19l6-6 4 3 8-9M16 7h5v5" {...s} /> : null}
+      {k === 'nutrition' ? <Path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16 21V3c-2 1.5-3 4-3 7v4h3" {...s} /> : null}
       {k === 'coach' ? <Path d="M4 5h16v11H9l-5 4zM8 10h8M8 13h5" {...s} /> : null}
     </Svg>
   );
@@ -89,7 +91,7 @@ function Shell() {
   }, []);
 
   const current: Tab = tab === 'seance' && !data.active ? 'seances' : tab;
-  const tabs: [Tab, string][] = [['seances', 'Séances'], ...(data.active ? ([['seance', 'En cours']] as [Tab, string][]) : []), ['exos', 'Exercices'], ['progres', 'Progrès'], ['coach', 'Coach']];
+  const tabs: [Tab, string][] = [['seances', 'Séances'], ...(data.active ? ([['seance', 'En cours']] as [Tab, string][]) : []), ['progres', 'Progrès'], ['nutrition', 'Nutrition'], ['coach', 'Coach']];
   const left = restEnd ? Math.max(0, Math.ceil((restEnd - now) / 1000)) : 0;
 
   return (
@@ -102,6 +104,7 @@ function Shell() {
           {current === 'seance' && <Session />}
           {current === 'exos' && <Exercices />}
           {current === 'progres' && <Progres />}
+          {current === 'nutrition' && <Nutrition />}
           {current === 'coach' && <Coach />}
           {current === 'reglages' && <Reglages />}
         </View>

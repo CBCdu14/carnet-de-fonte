@@ -1,7 +1,9 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { kv } from './platform/storage';
-import type { Active, Data, Exercise, GarminData, Log, Settings, SyncMeta, Workout } from './types';
+import type { Active, Data, DayPlan, Exercise, Food, GarminData, Log, MealItem, NutriTargets, Recipe, Settings, Slot, SyncMeta, Workout } from './types';
+import { SEED_RECIPES } from './nutrition/recipes';
+import { DEFAULT_TARGETS } from './nutrition/calc';
 import { merge, toPayload, type Payload } from './cloud';
 import { dayStr, goalFor, lastPerf, parseNum, r2, uid } from './logic';
 import { seedExercises, seedWorkouts } from './seed';
@@ -14,6 +16,10 @@ const K = {
   settings: 'cdf.settings',
   garmin: 'cdf.garmin',
   meta: 'cdf.meta',
+  foods: 'cdf.foods',
+  recipes: 'cdf.recipes',
+  days: 'cdf.days',
+  nutri: 'cdf.nutri',
 } as const;
 type Key = keyof typeof K;
 
@@ -29,6 +35,13 @@ async function readJSON<T>(key: string): Promise<T | null> {
 }
 
 async function loadData(): Promise<Data> {
+  const [foods, recipes, days, nutri] = await Promise.all([
+    readJSON<Food[]>(K.foods),
+    readJSON<Recipe[]>(K.recipes),
+    readJSON<DayPlan[]>(K.days),
+    readJSON<NutriTargets>(K.nutri),
+  ]);
+  const nut = { foods: foods ?? [], recipes: recipes ?? SEED_RECIPES, days: days ?? [], nutri: nutri ?? DEFAULT_TARGETS };
   const [exercises, workouts, logs, active, settings, garmin, meta] = await Promise.all([
     readJSON<Record<string, Exercise>>(K.exercises),
     readJSON<Workout[]>(K.workouts),
@@ -41,7 +54,7 @@ async function loadData(): Promise<Data> {
   if (!exercises) {
     // Premier lancement : programme de départ
     const ex = seedExercises();
-    return { exercises: ex, workouts: seedWorkouts(ex), logs: [], active: null, settings: DEFAULT_SETTINGS, garmin: null, meta: { ...EMPTY_META, pristine: true } };
+    return { exercises: ex, workouts: seedWorkouts(ex), logs: [], active: null, settings: DEFAULT_SETTINGS, garmin: null, meta: { ...EMPTY_META, pristine: true }, ...nut };
   }
   return {
     exercises,
@@ -53,6 +66,7 @@ async function loadData(): Promise<Data> {
     garmin: garmin ?? null,
     // Version d'avant la synchro : si c'est encore le programme d'exemple, la synchro le remplacera
     meta: meta ?? { ...EMPTY_META, pristine: !(logs ?? []).length && (workouts ?? []).every((w) => SEED_WO.has(w.id)) },
+    ...nut,
   };
 }
 
@@ -88,6 +102,14 @@ export interface Store {
   /** Applique le résultat d'une synchro démarrée à la version locale `rev`. */
   applySync: (p: Payload, rev: number) => void;
   setSyncError: (msg: string | null) => void;
+  saveRecipe: (r: Omit<Recipe, 'id' | 'u'> & { id?: string }) => string;
+  deleteRecipe: (id: string) => void;
+  saveFood: (f: Food) => void;
+  addMeal: (date: string, slot: Slot, which: 'plan' | 'eaten', item: Omit<MealItem, 'id'>) => void;
+  removeMeal: (date: string, slot: Slot, which: 'plan' | 'eaten', itemId: string) => void;
+  markEaten: (date: string, slot: Slot, itemId: string) => void;
+  setTargets: (t: Partial<NutriTargets>) => void;
+  copyPlan: (from: string[], to: string[]) => void;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -298,8 +320,61 @@ export function StoreProvider({ children, fallback }: { children: React.ReactNod
             exercises: m.exercises,
             workouts: sortWo(m.workouts),
             logs: m.logs,
+            foods: m.foods ?? d.foods,
+            recipes: m.recipes ?? d.recipes,
+            days: m.days ?? d.days,
+            nutri: m.nutri ?? d.nutri,
             meta: { ...d.meta, tomb: m.tomb, pristine: false, syncedRev: rev, syncedAt: Date.now(), lastError: undefined },
           };
+        }),
+      saveRecipe: (r) => {
+        const id = r.id || 'r-' + uid();
+        mut((d) => ({ ...d, recipes: [...d.recipes.filter((x) => x.id !== id), { ...r, id, u: now() }] }));
+        return id;
+      },
+      deleteRecipe: (id) => mut((d) => ({ ...d, recipes: d.recipes.filter((x) => x.id !== id), meta: { ...d.meta, tomb: { ...d.meta.tomb, [id]: now() } } })),
+      saveFood: (f) => mut((d) => ({ ...d, foods: [...d.foods.filter((x) => x.id !== f.id), { ...f, u: now() }] })),
+      addMeal: (date, slot, which, item) =>
+        mut((d) => {
+          const day: DayPlan = d.days.find((x) => x.id === date) ?? { id: date, plan: {}, eaten: {} };
+          const list = [...(day[which][slot] ?? []), { ...item, id: 'm-' + uid() }];
+          const nd = { ...day, [which]: { ...day[which], [slot]: list }, u: now() };
+          return { ...d, days: [...d.days.filter((x) => x.id !== date), nd] };
+        }),
+      removeMeal: (date, slot, which, itemId) =>
+        mut((d) => {
+          const day = d.days.find((x) => x.id === date);
+          if (!day) return d;
+          const nd = { ...day, [which]: { ...day[which], [slot]: (day[which][slot] ?? []).filter((x) => x.id !== itemId) }, u: now() };
+          return { ...d, days: d.days.map((x) => (x.id === date ? nd : x)) };
+        }),
+      markEaten: (date, slot, itemId) =>
+        mut((d) => {
+          const day = d.days.find((x) => x.id === date);
+          const it = day?.plan[slot]?.find((x) => x.id === itemId);
+          if (!day || !it) return d;
+          const nd = {
+            ...day,
+            plan: { ...day.plan, [slot]: (day.plan[slot] ?? []).filter((x) => x.id !== itemId) },
+            eaten: { ...day.eaten, [slot]: [...(day.eaten[slot] ?? []), { ...it, id: 'm-' + uid() }] },
+            u: now(),
+          };
+          return { ...d, days: d.days.map((x) => (x.id === date ? nd : x)) };
+        }),
+      setTargets: (t) => mut((d) => ({ ...d, nutri: { ...d.nutri, ...t, u: now() } })),
+      copyPlan: (from, to) =>
+        mut((d) => {
+          let days = d.days;
+          from.forEach((src, i) => {
+            const s = d.days.find((x) => x.id === src);
+            const dst = to[i];
+            if (!s || !dst) return;
+            const cur = days.find((x) => x.id === dst) ?? { id: dst, plan: {}, eaten: {} };
+            const plan: DayPlan['plan'] = {};
+            for (const [slot, items] of Object.entries(s.plan) as [Slot, MealItem[]][]) plan[slot] = [...(cur.plan[slot] ?? []), ...items.map((it) => ({ ...it, id: 'm-' + uid() }))];
+            days = [...days.filter((x) => x.id !== dst), { ...cur, plan, u: now() }];
+          });
+          return { ...d, days };
         }),
       setSyncError: (msg) => set((d) => (d.meta.lastError === (msg ?? undefined) ? d : { ...d, meta: { ...d.meta, lastError: msg ?? undefined } })),
     };
