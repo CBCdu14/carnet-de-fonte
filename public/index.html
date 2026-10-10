@@ -16,12 +16,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <style id="expo-reset">
-      html, body { height: 100%; background: #F2F2F7; }
+      html, body { height: var(--app-h, 100%); background: #F2F2F7; }
       @media (prefers-color-scheme: dark) { html, body { background: #000000; } }
       body { overflow: hidden; margin: 0; overscroll-behavior: none; -webkit-text-size-adjust: 100%; font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; }
-      /* Plein écran réel sur iPhone (appli écran d'accueil) : on s'accroche aux 4 bords de l'écran,
-         y compris sous la barre d'accueil, au lieu de « 100 % » qui s'arrête au-dessus. */
-      #root { display: flex; position: fixed; top: 0; right: 0; bottom: 0; left: 0; height: 100vh; height: 100lvh; }
+      #root { display: flex; height: 100%; }
       input, textarea { font-size: 16px; }
       * { -webkit-tap-highlight-color: transparent; }
     </style>
@@ -29,6 +27,23 @@
   <body>
     <noscript>Active JavaScript pour utiliser Carnet de Fonte.</noscript>
     <div id="root"></div>
+    <script>
+      /* iPhone, appli ouverte depuis l'écran d'accueil : iOS annonce une hauteur de page amputée de la
+         barre d'état (bande vide en bas). On cale la hauteur sur la taille réelle de l'écran. */
+      (function () {
+        var standalone = navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+        if (!standalone) return;
+        function fit() {
+          var portrait = window.innerHeight >= window.innerWidth;
+          var full = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+          var h = Math.max(window.innerHeight, full);
+          document.documentElement.style.setProperty('--app-h', h + 'px');
+        }
+        fit();
+        window.addEventListener('resize', fit);
+        window.addEventListener('orientationchange', function () { setTimeout(fit, 300); });
+      })();
+    </script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function () {
