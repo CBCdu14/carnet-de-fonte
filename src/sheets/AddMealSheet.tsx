@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useStore } from '../store';
 import { useTheme } from '../theme';
 import { Btn, Card, Chip, Field, H2, Meta, Sheet, Body } from '../ui';
@@ -8,6 +8,9 @@ import { SLOTS, foodMacros, recipeMacros, type Macros } from '../nutrition/calc'
 import { searchFoods } from '../nutrition/foods';
 import { searchOFF } from '../nutrition/off';
 import { parseNum } from '../logic';
+import { pickPhoto } from '../platform/photo';
+import { analyzeMeal, type PhotoItem } from '../nutrition/vision';
+import { getKey } from '../coach';
 
 const QUICK: [string, number, number][] = [
   ['Restaurant (plat)', 800, 35],
@@ -65,7 +68,13 @@ export function AddMealSheet({
 }) {
   const t = useTheme();
   const { data, addMeal, saveFood } = useStore();
-  const [tab, setTab] = useState<'recipe' | 'food' | 'quick'>(recipe0 ? 'recipe' : 'recipe');
+  const [tab, setTab] = useState<'photo' | 'recipe' | 'food' | 'quick'>(recipe0 ? 'recipe' : 'photo');
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [pItems, setPItems] = useState<(PhotoItem & { gt: string; on: boolean })[]>([]);
+  const [pComment, setPComment] = useState('');
+  const [pBusy, setPBusy] = useState(false);
+  const [pErr, setPErr] = useState('');
+  const [hint, setHint] = useState('');
   const [slot, setSlot] = useState<Slot>(slot0);
   const [which, setWhich] = useState(which0);
   const [q, setQ] = useState('');
@@ -109,6 +118,40 @@ export function AddMealSheet({
   };
 
   const g = parseNum(grams);
+
+  const analyze = async (img: string) => {
+    const key = await getKey().catch(() => null);
+    if (!key) return setPErr("Ajoute ta clé OpenAI dans Réglages pour analyser les photos.");
+    setPBusy(true);
+    setPErr('');
+    setPItems([]);
+    try {
+      const r = await analyzeMeal(key, data.settings.model, img, hint);
+      setPItems(r.items.map((i) => ({ ...i, gt: String(i.g), on: true })));
+      setPComment(r.comment);
+      if (!r.items.length) setPErr(r.comment || "Aucun aliment reconnu sur la photo.");
+    } catch (e: any) {
+      setPErr(e?.message ?? 'Analyse impossible, réessaie.');
+    } finally {
+      setPBusy(false);
+    }
+  };
+  const takePhoto = async () => {
+    try {
+      const img = await pickPhoto();
+      if (!img) return;
+      setPhoto(img);
+      analyze(img);
+    } catch (e: any) {
+      setPErr(e?.message ?? 'Photo impossible.');
+    }
+  };
+  // Macros recalculées si on corrige les grammes
+  const scaled = (i: PhotoItem & { gt: string }) => {
+    const k = i.g > 0 ? parseNum(i.gt) / i.g : 1;
+    return { kcal: i.kcal * k, p: i.p * k, c: i.c * k, f: i.f * k };
+  };
+  const pTotal = pItems.filter((i) => i.on).reduce((m, i) => { const x = scaled(i); return { kcal: m.kcal + x.kcal, p: m.p + x.p, c: m.c + x.c, f: m.f + x.f }; }, { kcal: 0, p: 0, c: 0, f: 0 });
   return (
     <Sheet visible onClose={onClose}>
       <H2>Ajouter</H2>
@@ -125,12 +168,81 @@ export function AddMealSheet({
         ))}
       </View>
       <View style={{ flexDirection: 'row', gap: 6 }}>
+        <Chip label="Photo" active={tab === 'photo'} onPress={() => setTab('photo')} />
         <Chip label="Recette" active={tab === 'recipe'} onPress={() => setTab('recipe')} />
         <Chip label="Aliment" active={tab === 'food'} onPress={() => setTab('food')} />
-        <Chip label="Rapide / dehors" active={tab === 'quick'} onPress={() => setTab('quick')} />
+        <Chip label="Dehors" active={tab === 'quick'} onPress={() => setTab('quick')} />
       </View>
 
-      {tab !== 'quick' ? <Field value={q} onChangeText={(v) => { setQ(v); setOnline(null); }} placeholder={tab === 'recipe' ? 'Chercher une recette' : 'Chercher un aliment (poulet, skyr…)'} autoCorrect={false} /> : null}
+      {tab === 'photo' ? (
+        <>
+          {!photo ? <Meta>Prends ton assiette en photo, bien à plat et en entier : l'IA liste les aliments et estime les quantités. Tu corriges ensuite si besoin.</Meta> : null}
+          <Field value={hint} onChangeText={setHint} placeholder="Précision (facultatif) : pâtes complètes…" />
+          {photo ? <Image source={{ uri: photo }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 12 }} resizeMode="cover" /> : null}
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Btn label={photo ? 'Reprendre une photo' : 'Prendre une photo'} kind={photo ? 'ghost' : 'primary'} onPress={takePhoto} disabled={pBusy} style={{ flex: 1 }} />
+            {photo && !pBusy ? <Btn kind="ghost" label="Réanalyser" onPress={() => analyze(photo)} /> : null}
+          </View>
+          {pBusy ? (
+            <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+              <ActivityIndicator color={t.accent} />
+              <Meta>Analyse de l'assiette…</Meta>
+            </View>
+          ) : null}
+          {pErr ? <Meta style={{ color: t.bad }}>{pErr}</Meta> : null}
+          {pItems.length ? (
+            <>
+              <Card pad={false}>
+                {pItems.map((i, k) => {
+                  const x = scaled(i);
+                  return (
+                    <View key={k} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, paddingRight: 10, marginLeft: 12, borderTopWidth: k ? 0.5 : 0, borderTopColor: t.line, opacity: i.on ? 1 : 0.4 }}>
+                      <Pressable onPress={() => setPItems((xs) => xs.map((y, j) => (j === k ? { ...y, on: !y.on } : y)))} hitSlop={8} accessibilityRole="checkbox" accessibilityState={{ checked: i.on }}>
+                        <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: i.on ? t.accent : t.line, backgroundColor: i.on ? t.accent : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                          {i.on ? <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>✓</Text> : null}
+                        </View>
+                      </Pressable>
+                      <View style={{ flex: 1 }}>
+                        <Body style={{ fontSize: 16 }}>{i.name}</Body>
+                        <Meta style={{ fontSize: 13 }}>
+                          {Math.round(x.kcal)} kcal · P {Math.round(x.p)} g
+                        </Meta>
+                      </View>
+                      <TextInput
+                        value={i.gt}
+                        onChangeText={(v) => setPItems((xs) => xs.map((y, j) => (j === k ? { ...y, gt: v } : y)))}
+                        keyboardType="decimal-pad"
+                        selectTextOnFocus
+                        style={{ width: 62, textAlign: 'right', color: t.ink, fontSize: 16, backgroundColor: t.sunk, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 8 }}
+                      />
+                      <Meta>g</Meta>
+                    </View>
+                  );
+                })}
+              </Card>
+              {pComment ? <Meta style={{ fontSize: 13 }}>{pComment}</Meta> : null}
+              <Card style={{ gap: 2 }}>
+                <Meta style={{ fontSize: 13 }}>Total</Meta>
+                <MacroLine m={pTotal} />
+              </Card>
+              <Btn
+                label="Ajouter ce repas"
+                disabled={!pItems.some((i) => i.on)}
+                onPress={() => {
+                  for (const i of pItems.filter((x) => x.on)) {
+                    const x = scaled(i);
+                    addMeal(date, slot, which, { kind: 'quick', qty: 1, label: `${i.name} (${Math.round(parseNum(i.gt))} g)`, kcal: Math.round(x.kcal), p: Math.round(x.p * 10) / 10, c: Math.round(x.c * 10) / 10, f: Math.round(x.f * 10) / 10 });
+                  }
+                  onClose();
+                }}
+              />
+              <Meta style={{ fontSize: 13 }}>Estimation par IA : les quantités peuvent varier de 20 à 30 %. Corrige les grammes si tu les connais.</Meta>
+            </>
+          ) : null}
+        </>
+      ) : null}
+
+      {tab !== 'quick' && tab !== 'photo' ? <Field value={q} onChangeText={(v) => { setQ(v); setOnline(null); }} placeholder={tab === 'recipe' ? 'Chercher une recette' : 'Chercher un aliment (poulet, skyr…)'} autoCorrect={false} /> : null}
 
       {tab === 'recipe' ? (
         <>
