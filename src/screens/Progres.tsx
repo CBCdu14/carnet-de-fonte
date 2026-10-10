@@ -32,7 +32,7 @@ export function Progres() {
   );
   if (view === 'corps') {
     return (
-      <Screen header={<Header eyebrow="Suivi" title="Progrès" />}>
+      <Screen header={<Header title="Progrès" />}>
         {seg}
         <Corps />
       </Screen>
@@ -41,7 +41,7 @@ export function Progres() {
 
   if (!data.logs.length) {
     return (
-      <Screen header={<Header eyebrow="Suivi" title="Progrès" />}>
+      <Screen header={<Header title="Progrès" />}>
         {seg}
         <Empty
           title="Pas encore de séance enregistrée"
@@ -62,7 +62,7 @@ export function Progres() {
   );
 
   return (
-    <Screen header={<Header eyebrow="Suivi" title="Progrès" />}>
+    <Screen header={<Header title="Progrès" />}>
       {seg}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
         {[...withData, ...exs.filter((e) => !withData.includes(e))].map((e) => (

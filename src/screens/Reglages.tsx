@@ -3,7 +3,7 @@ import { Platform, View } from 'react-native';
 import { exportBackup, pickBackup } from '../platform/backup';
 import Constants from 'expo-constants';
 import { useStore } from '../store';
-import { Btn, Card, Chip, Field, H3, Header, Meta, Screen, Body, useNav } from '../ui';
+import { Btn, Card, Chip, Field, H3, Header, Meta, NavBtn, Screen, Body, useNav } from '../ui';
 import { getKey, setKey } from '../coach';
 import { getGhToken, setGhToken } from '../garmin';
 import { useGarminSync } from '../useGarminSync';
@@ -89,7 +89,7 @@ export function Reglages() {
   };
 
   return (
-    <Screen header={<Header eyebrow="Carnet de fonte" title="Réglages" right={<Btn small kind="ghost" label="← Séances" onPress={() => go('seances')} />} />}>
+    <Screen header={<Header title="Réglages" left={<NavBtn label="‹ Séances" onPress={() => go('seances')} />} />}>
       <Card>
         <H3>Coach ChatGPT</H3>
         <Meta>

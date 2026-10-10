@@ -119,7 +119,7 @@ function Shell() {
               return (
                 <Pressable key={k} onPress={() => setTab(k)} accessibilityRole="tab" accessibilityState={{ selected: on }} style={{ flex: 1, alignItems: 'center', paddingTop: 9, paddingBottom: 10, gap: 3 }}>
                   <TabIcon k={k} color={color} />
-                  <Text style={{ color, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 }} numberOfLines={1}>
+                  <Text style={{ color, fontSize: 10, fontWeight: '500' }} numberOfLines={1}>
                     {label}
                   </Text>
                 </Pressable>

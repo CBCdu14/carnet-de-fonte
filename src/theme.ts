@@ -1,19 +1,20 @@
 import { useColorScheme } from 'react-native';
 
+/* Couleurs système Apple (iOS) */
 export const light = {
-  bg: '#E8ECEA',
-  surface: '#F8F9F8',
-  sunk: '#DDE3E0',
-  ink: '#15191B',
-  muted: '#5A6468',
-  line: '#C9D1CE',
-  accent: '#1F49C7',
+  bg: '#F2F2F7', // systemGroupedBackground
+  surface: '#FFFFFF', // secondarySystemGroupedBackground
+  sunk: '#EEEEF0', // tertiary fill
+  ink: '#000000',
+  muted: '#8A8A8E', // secondaryLabel
+  line: '#D8D8DC', // separator
+  accent: '#007AFF', // systemBlue
   accentInk: '#FFFFFF',
-  accentSoft: '#DCE4FA',
-  good: '#1D7445',
-  goodSoft: '#DCEFE3',
-  bad: '#B42318',
-  badSoft: '#F8E1DE',
+  accentSoft: '#E5F0FF',
+  good: '#248A3D', // systemGreen (texte lisible)
+  goodSoft: '#E4F6E8',
+  bad: '#FF3B30',
+  badSoft: '#FFE9E7',
   // Couleurs des disques olympiques
   p25: '#C8102E',
   p20: '#1F49C7',
@@ -25,19 +26,19 @@ export const light = {
 };
 
 export const dark: typeof light = {
-  bg: '#101315',
-  surface: '#191D20',
-  sunk: '#0B0D0F',
-  ink: '#E7ECEA',
-  muted: '#97A2A6',
-  line: '#2B3236',
-  accent: '#7B98FF',
-  accentInk: '#0A0F1F',
-  accentSoft: '#1D2648',
-  good: '#5FCB8C',
-  goodSoft: '#15291E',
-  bad: '#FF8A7A',
-  badSoft: '#35191A',
+  bg: '#000000',
+  surface: '#1C1C1E',
+  sunk: '#2C2C2E',
+  ink: '#FFFFFF',
+  muted: '#8E8E93',
+  line: '#38383A',
+  accent: '#0A84FF',
+  accentInk: '#FFFFFF',
+  accentSoft: '#0B2A4A',
+  good: '#30D158',
+  goodSoft: '#0F2E19',
+  bad: '#FF453A',
+  badSoft: '#3A1513',
   p25: '#C8102E',
   p20: '#1F49C7',
   p15: '#E0A800',

@@ -3,7 +3,7 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 import { buzz } from '../platform/buzz';
 import { useStore } from '../store';
 import { useTheme } from '../theme';
-import { Btn, Card, Eyebrow, H1, H2, LinkBtn, LoadCtl, Meta, Plates, Screen, useNav } from '../ui';
+import { Btn, Card, H1, H2, LinkBtn, LoadCtl, Meta, NavBtn, Plates, Screen, useNav } from '../ui';
 import { fDate, fTime, fmt, goalFor, pad, parseNum, sharedCount } from '../logic';
 import { FinishSheet } from '../sheets/FinishSheet';
 
@@ -74,22 +74,26 @@ export function Session() {
     borderRadius: 8,
     paddingHorizontal: 10,
   });
-  const input = { flex: 1, minWidth: 0, paddingVertical: 10, fontSize: 20, fontWeight: '700' as const, color: t.ink, fontVariant: ['tabular-nums' as const] };
+  const input = { flex: 1, minWidth: 0, paddingVertical: 10, fontSize: 20, fontWeight: '600' as const, color: t.ink, fontVariant: ['tabular-nums' as const] };
 
   return (
     <Screen
       header={
-        <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
-          <View style={{ flexShrink: 1 }}>
-            <Eyebrow>
-              Depuis {fTime(a.startedAt)} · {elapsed}
-            </Eyebrow>
-            <H1>{a.name}</H1>
+        <View style={{ gap: 2 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 36 }}>
+            <Pressable onPress={cancel} hitSlop={10} accessibilityRole="button">
+              {({ pressed }) => (
+                <Text style={{ color: confirmCancel ? t.bad : t.accent, fontSize: 17, fontWeight: confirmCancel ? '600' : '400', opacity: pressed ? 0.4 : 1 }}>
+                  {confirmCancel ? "Confirmer l'annulation" : 'Annuler'}
+                </Text>
+              )}
+            </Pressable>
+            <NavBtn label="Terminer" bold onPress={() => setFinish(true)} />
           </View>
-          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-            <Btn small kind={confirmCancel ? 'danger' : 'ghost'} label={confirmCancel ? 'Confirmer' : 'Annuler'} onPress={cancel} />
-            <Btn small label="Terminer" onPress={() => setFinish(true)} />
-          </View>
+          <H1>{a.name}</H1>
+          <Meta>
+            Commencée à {fTime(a.startedAt)} · {elapsed}
+          </Meta>
         </View>
       }
     >
@@ -102,9 +106,8 @@ export function Session() {
               <View style={{ flexShrink: 1, minWidth: 0 }}>
                 <H2>{ex?.name ?? e.name}</H2>
                 <Meta>
-                  Objectif {e.sets.length}×{e.target}
-                  {e.prev ? ` · dernière fois (${fDate(e.prev.date)}) : ${e.prev.sets.map((p) => `${fmt(p.kg)}×${fmt(p.r)}`).join(' · ')}` : ' · première fois'}
-                  {n > 1 ? <Text style={{ color: t.accent, fontWeight: '700' }}>{` · charge partagée avec ${n - 1} autre${n > 2 ? 's' : ''} séance${n > 2 ? 's' : ''}`}</Text> : null}
+                  Objectif {e.sets.length} × {e.target}
+                  {e.prev ? ` · le ${fDate(e.prev.date)} : ${e.prev.sets.map((p) => fmt(p.r)).join('/')}` : ' · première fois'}
                 </Meta>
               </View>
               {ex ? (
@@ -126,7 +129,7 @@ export function Session() {
                 return (
                 <View key={j} style={{ gap: 2 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={{ width: 22, textAlign: 'center', color: t.muted, fontWeight: '800', fontSize: 16 }}>{j + 1}</Text>
+                  <Text style={{ width: 22, textAlign: 'center', color: t.muted, fontWeight: '600', fontSize: 16 }}>{j + 1}</Text>
                   <View style={fieldBox(s.done)}>
                     <TextInput style={input} value={s.kg} onChangeText={(v) => setField(i, j, 'kg', v)} keyboardType="decimal-pad" selectTextOnFocus accessibilityLabel={`Charge série ${j + 1}`} />
                     <Text style={{ color: t.muted, fontSize: 13 }}>kg</Text>
@@ -140,9 +143,9 @@ export function Session() {
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: s.done }}
                     accessibilityLabel={`Valider la série ${j + 1}`}
-                    style={{ width: 48, height: 44, borderRadius: 8, borderWidth: 1.5, borderColor: s.done ? t.good : t.line, backgroundColor: s.done ? t.good : 'transparent', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: s.done ? t.good : t.line, backgroundColor: s.done ? t.good : 'transparent', alignItems: 'center', justifyContent: 'center' }}
                   >
-                    <Text style={{ fontSize: 18, fontWeight: '800', color: s.done ? t.surface : t.muted }}>✓</Text>
+                    <Text style={{ fontSize: 18, fontWeight: '700', color: s.done ? '#FFFFFF' : t.line }}>✓</Text>
                   </Pressable>
                 </View>
                 <Text style={{ marginLeft: 30, fontSize: 13, color: reached ? t.good : t.muted, fontVariant: ['tabular-nums'] }}>

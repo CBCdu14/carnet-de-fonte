@@ -32,27 +32,27 @@ export const useNav = () => useContext(NavCtx);
 /* ---------- type ---------- */
 export function H1(p: TextProps) {
   const t = useTheme();
-  return <Text {...p} style={[{ color: t.ink, fontSize: 32, fontWeight: '800', letterSpacing: -0.5, textTransform: 'uppercase' }, p.style]} />;
+  return <Text {...p} style={[{ color: t.ink, fontSize: 34, fontWeight: '700', letterSpacing: 0.2 }, p.style]} />;
 }
 export function H2(p: TextProps) {
   const t = useTheme();
-  return <Text {...p} style={[{ color: t.ink, fontSize: 20, fontWeight: '800', textTransform: 'uppercase' }, p.style]} />;
+  return <Text {...p} style={[{ color: t.ink, fontSize: 20, fontWeight: '600', letterSpacing: 0.2 }, p.style]} />;
 }
 export function H3(p: TextProps) {
   const t = useTheme();
-  return <Text {...p} style={[{ color: t.ink, fontSize: 15, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.6 }, p.style]} />;
+  return <Text {...p} style={[{ color: t.ink, fontSize: 17, fontWeight: '600' }, p.style]} />;
 }
 export function Eyebrow(p: TextProps) {
   const t = useTheme();
-  return <Text {...p} style={[{ color: t.muted, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.4 }, p.style]} />;
+  return <Text {...p} style={[{ color: t.muted, fontSize: 13, fontWeight: '400', textTransform: 'uppercase', letterSpacing: 0.3 }, p.style]} />;
 }
 export function Body(p: TextProps) {
   const t = useTheme();
-  return <Text {...p} style={[{ color: t.ink, fontSize: 16, lineHeight: 22 }, p.style]} />;
+  return <Text {...p} style={[{ color: t.ink, fontSize: 17, lineHeight: 22 }, p.style]} />;
 }
 export function Meta(p: TextProps) {
   const t = useTheme();
-  return <Text {...p} style={[{ color: t.muted, fontSize: 14, lineHeight: 19, fontVariant: ['tabular-nums'] }, p.style]} />;
+  return <Text {...p} style={[{ color: t.muted, fontSize: 15, lineHeight: 20, fontVariant: ['tabular-nums'] }, p.style]} />;
 }
 
 /* ---------- buttons ---------- */
@@ -73,8 +73,8 @@ export function Btn({
   style?: ViewStyle;
 }) {
   const t = useTheme();
-  const bg = kind === 'primary' ? t.accent : kind === 'danger' ? t.bad : 'transparent';
-  const fg = kind === 'ghost' ? t.ink : kind === 'danger' ? t.surface : t.accentInk;
+  const bg = kind === 'primary' ? t.accent : kind === 'danger' ? t.bad : t.accentSoft;
+  const fg = kind === 'ghost' ? t.accent : kind === 'danger' ? '#FFFFFF' : t.accentInk;
   return (
     <Pressable
       accessibilityRole="button"
@@ -83,10 +83,8 @@ export function Btn({
       style={({ pressed }) => [
         {
           backgroundColor: bg,
-          borderColor: kind === 'ghost' ? t.line : bg,
-          borderWidth: 1,
-          borderRadius: 999,
-          paddingVertical: small ? 7 : 11,
+          borderRadius: small ? 999 : 14,
+          paddingVertical: small ? 8 : 14,
           paddingHorizontal: small ? 14 : 18,
           opacity: disabled ? 0.45 : pressed ? 0.75 : 1,
           alignItems: 'center',
@@ -94,7 +92,7 @@ export function Btn({
         style,
       ]}
     >
-      <Text style={{ color: fg, fontWeight: '700', fontSize: small ? 14 : 16 }}>{label}</Text>
+      <Text style={{ color: fg, fontWeight: '600', fontSize: small ? 15 : 17 }}>{label}</Text>
     </Pressable>
   );
 }
@@ -103,7 +101,7 @@ export function LinkBtn({ label, onPress, color }: { label: string; onPress: () 
   const t = useTheme();
   return (
     <Pressable onPress={onPress} hitSlop={8} accessibilityRole="button">
-      <Text style={{ color: color ?? t.accent, fontWeight: '700', fontSize: 15, paddingVertical: 4 }}>{label}</Text>
+      <Text style={{ color: color ?? t.accent, fontWeight: '400', fontSize: 17, paddingVertical: 4 }}>{label}</Text>
     </Pressable>
   );
 }
@@ -114,15 +112,13 @@ export function Chip({ label, onPress, active }: { label: string; onPress: () =>
     <Pressable
       onPress={onPress}
       style={{
-        borderWidth: 1,
-        borderColor: active ? t.accent : t.line,
         backgroundColor: active ? t.accent : t.surface,
         borderRadius: 999,
         paddingVertical: 8,
         paddingHorizontal: 14,
       }}
     >
-      <Text style={{ color: active ? t.accentInk : t.ink, fontSize: 14, fontWeight: '600' }}>{label}</Text>
+      <Text style={{ color: active ? t.accentInk : t.ink, fontSize: 15, fontWeight: '500' }}>{label}</Text>
     </Pressable>
   );
 }
@@ -133,7 +129,7 @@ export function Card({ children, style, pad = true }: { children: React.ReactNod
   return (
     <View
       style={[
-        { backgroundColor: t.surface, borderColor: t.line, borderWidth: StyleSheet.hairlineWidth * 2, borderRadius: 14, overflow: 'hidden' },
+        { backgroundColor: t.surface, borderRadius: 12, overflow: 'hidden' },
         pad && { padding: 16, gap: 10 },
         style,
       ]}
@@ -146,7 +142,7 @@ export function Card({ children, style, pad = true }: { children: React.ReactNod
 export function Empty({ title, text, action }: { title: string; text: string; action?: React.ReactNode }) {
   const t = useTheme();
   return (
-    <View style={{ borderWidth: 1.5, borderStyle: 'dashed', borderColor: t.line, borderRadius: 12, padding: 24, alignItems: 'center', gap: 10 }}>
+    <View style={{ backgroundColor: t.surface, borderRadius: 12, padding: 24, alignItems: 'center', gap: 10 }}>
       <H3>{title}</H3>
       <Meta style={{ textAlign: 'center' }}>{text}</Meta>
       {action}
@@ -157,8 +153,8 @@ export function Empty({ title, text, action }: { title: string; text: string; ac
 export function Hint({ children }: { children: React.ReactNode }) {
   const t = useTheme();
   return (
-    <View style={{ backgroundColor: t.accentSoft, borderRadius: 10, padding: 14 }}>
-      <Text style={{ color: t.ink, fontSize: 15, lineHeight: 21 }}>{children}</Text>
+    <View style={{ backgroundColor: t.surface, borderRadius: 12, padding: 16 }}>
+      <Text style={{ color: t.muted, fontSize: 15, lineHeight: 21 }}>{children}</Text>
     </View>
   );
 }
@@ -169,7 +165,7 @@ export function Screen({ children, header }: { children: React.ReactNode; header
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: t.bg }}
-      contentContainerStyle={{ paddingTop: ins.top + 16, paddingBottom: 120, paddingHorizontal: 16, gap: 16, maxWidth: 680, width: '100%', alignSelf: 'center' }}
+      contentContainerStyle={{ paddingTop: ins.top + 12, paddingBottom: 130, paddingHorizontal: 16, gap: 18, maxWidth: 680, width: '100%', alignSelf: 'center' }}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
     >
@@ -179,15 +175,32 @@ export function Screen({ children, header }: { children: React.ReactNode; header
   );
 }
 
-export function Header({ eyebrow, title, right }: { eyebrow: string; title: string; right?: React.ReactNode }) {
+/** Grand titre façon iOS ; les actions se placent au-dessus, alignées à droite. */
+export function Header({ title, right, left }: { eyebrow?: string; title: string; right?: React.ReactNode; left?: React.ReactNode }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-      <View style={{ flexShrink: 1 }}>
-        <Eyebrow>{eyebrow}</Eyebrow>
-        <H1>{title}</H1>
+    <View style={{ gap: 2 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 36 }}>
+        <View>{left}</View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>{right}</View>
       </View>
-      {right}
+      <H1>{title}</H1>
     </View>
+  );
+}
+
+/** Titre de section (gris, majuscules), au-dessus d'une liste groupée. */
+export function SectionTitle({ children }: { children: React.ReactNode }) {
+  const t = useTheme();
+  return <Text style={{ color: t.muted, fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.3, marginLeft: 16, marginBottom: -10 }}>{children}</Text>;
+}
+
+/** Bouton icône texte (style barre de navigation iOS). */
+export function NavBtn({ label, onPress, a11y, bold }: { label: string; onPress: () => void; a11y?: string; bold?: boolean }) {
+  const t = useTheme();
+  return (
+    <Pressable onPress={onPress} hitSlop={10} accessibilityRole="button" accessibilityLabel={a11y ?? label}>
+      {({ pressed }) => <Text style={{ color: t.accent, fontSize: 17, fontWeight: bold ? '600' : '400', opacity: pressed ? 0.4 : 1 }}>{label}</Text>}
+    </Pressable>
   );
 }
 
