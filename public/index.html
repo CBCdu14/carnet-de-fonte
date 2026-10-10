@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Carnet de Fonte</title>
     <meta name="description" content="Carnet de musculation : séances, charges, progression et coach." />
-    <meta name="theme-color" content="#15191B" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F2F2F7" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" type="image/png" href="./icon-192.png" />
     <!-- iPhone : appli plein écran depuis l'écran d'accueil -->
@@ -18,7 +19,9 @@
       html, body { height: 100%; background: #F2F2F7; }
       @media (prefers-color-scheme: dark) { html, body { background: #000000; } }
       body { overflow: hidden; margin: 0; overscroll-behavior: none; -webkit-text-size-adjust: 100%; font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; }
-      #root { display: flex; height: 100%; flex: 1; }
+      /* Plein écran réel sur iPhone (appli écran d'accueil) : on s'accroche aux 4 bords de l'écran,
+         y compris sous la barre d'accueil, au lieu de « 100 % » qui s'arrête au-dessus. */
+      #root { display: flex; position: fixed; top: 0; right: 0; bottom: 0; left: 0; height: 100vh; height: 100lvh; }
       input, textarea { font-size: 16px; }
       * { -webkit-tap-highlight-color: transparent; }
     </style>

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeepAwake } from './src/platform/keepAwake';
@@ -18,6 +18,9 @@ import { Coach } from './src/screens/Coach';
 import { Reglages } from './src/screens/Reglages';
 import { useGarminSync } from './src/useGarminSync';
 import { useCloudSync } from './src/useCloudSync';
+
+/* Barre d'onglets translucide façon iOS (web : flou d'arrière-plan) */
+const TAB_BLUR: any = Platform.OS === 'web' ? { backdropFilter: 'saturate(180%) blur(20px)', WebkitBackdropFilter: 'saturate(180%) blur(20px)' } : null;
 
 function TabIcon({ k, color }: { k: Tab; color: string }) {
   const s = { stroke: color, strokeWidth: 2, fill: 'none', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
@@ -113,7 +116,7 @@ function Shell() {
           </View>
         ) : null}
 
-        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: t.surface, borderTopWidth: 1, borderTopColor: t.line, paddingBottom: ins.bottom }}>
+        <View style={[{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: Platform.OS === 'web' ? t.surface + 'D9' : t.surface, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.line, paddingBottom: Math.max(ins.bottom - 6, 6) }, TAB_BLUR]}>
           <View style={{ flexDirection: 'row', maxWidth: 680, width: '100%', alignSelf: 'center' }}>
             {tabs.map(([k, label]) => {
               const on = current === k;
