@@ -6,6 +6,8 @@ import { useTheme } from '../theme';
 import { Btn, Card, H1, H2, LinkBtn, LoadCtl, Meta, NavBtn, Plates, Screen, useNav } from '../ui';
 import { fDate, fTime, fmt, goalFor, pad, parseNum, sharedCount } from '../logic';
 import { FinishSheet } from '../sheets/FinishSheet';
+import { Focus } from './Focus';
+import { unlockAudio } from '../platform/beep';
 
 function useElapsed(start: number) {
   const [now, setNow] = useState(Date.now());
@@ -20,7 +22,7 @@ function useElapsed(start: number) {
 export function Session() {
   const t = useTheme();
   const { data, changeLoad, updateActive, abandonWorkout } = useStore();
-  const { toast, startRest, go } = useNav();
+  const { toast, go } = useNav();
   const [finish, setFinish] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   useEffect(() => {
@@ -50,7 +52,9 @@ export function Session() {
     }));
     if (!wasDone) {
       buzz('tap');
-      startRest();
+      unlockAudio();
+      const sec = data.settings.restSec;
+      if (sec > 0) updateActive((x) => ({ ...x, rest: { end: Date.now() + sec * 1000, total: sec, kind: 'set' } }));
     }
   };
   const addSet = (i: number) =>
@@ -94,10 +98,21 @@ export function Session() {
           <Meta>
             Commencée à {fTime(a.startedAt)} · {elapsed}
           </Meta>
+          <View style={{ flexDirection: 'row', backgroundColor: t.sunk, borderRadius: 9, padding: 2, marginTop: 10 }}>
+            {(['focus', 'list'] as const).map((v) => {
+              const on = (a.view ?? 'focus') === v;
+              return (
+                <Pressable key={v} onPress={() => updateActive((x) => ({ ...x, view: v }))} style={{ flex: 1, paddingVertical: 7, borderRadius: 7, backgroundColor: on ? t.surface : 'transparent', alignItems: 'center' }}>
+                  <Text style={{ color: t.ink, fontWeight: on ? '600' : '400', fontSize: 14 }}>{v === 'focus' ? 'Exercice en cours' : 'Toute la séance'}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
       }
     >
-      {a.entries.map((e, i) => {
+      {(a.view ?? 'focus') === 'focus' ? <Focus onFinish={() => setFinish(true)} /> : null}
+      {(a.view ?? 'focus') === 'list' && a.entries.map((e, i) => {
         const ex = data.exercises[e.ex];
         const n = ex ? sharedCount(data.workouts, ex.id) : 0;
         return (
@@ -162,7 +177,7 @@ export function Session() {
           </Card>
         );
       })}
-      <Btn kind="ghost" label="Terminer la séance" onPress={() => setFinish(true)} />
+      {(a.view ?? 'focus') === 'list' ? <Btn kind="ghost" label="Terminer la séance" onPress={() => setFinish(true)} /> : null}
       {finish ? <FinishSheet onClose={() => setFinish(false)} /> : null}
     </Screen>
   );

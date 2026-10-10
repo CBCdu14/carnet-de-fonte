@@ -17,7 +17,7 @@ const K = {
 } as const;
 type Key = keyof typeof K;
 
-export const DEFAULT_SETTINGS: Settings = { restSec: 90, model: 'gpt-5-mini', garminRepo: '' };
+export const DEFAULT_SETTINGS: Settings = { restSec: 120, restExSec: 120, model: 'gpt-5-mini', garminRepo: '', sound: true };
 
 async function readJSON<T>(key: string): Promise<T | null> {
   try {
@@ -48,7 +48,8 @@ async function loadData(): Promise<Data> {
     workouts: workouts ?? [],
     logs: logs ?? [],
     active: active ?? null,
-    settings: { ...DEFAULT_SETTINGS, ...(settings ?? {}) },
+    // Réglages d'avant les deux minuteurs : on passe au repos de 2 min demandé
+    settings: { ...DEFAULT_SETTINGS, ...(settings ?? {}), ...(settings && settings.restExSec == null ? { restSec: 120 } : {}) },
     garmin: garmin ?? null,
     // Version d'avant la synchro : si c'est encore le programme d'exemple, la synchro le remplacera
     meta: meta ?? { ...EMPTY_META, pristine: !(logs ?? []).length && (workouts ?? []).every((w) => SEED_WO.has(w.id)) },

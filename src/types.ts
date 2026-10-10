@@ -73,15 +73,31 @@ export interface ActiveEntry {
   prev?: PrevPerf;
 }
 
+export interface RestTimer {
+  end: number;
+  total: number;
+  /** 'set' = entre deux séries, 'ex' = entre deux exercices */
+  kind: 'set' | 'ex';
+}
+
 export interface Active {
   workoutId: string;
   name: string;
   startedAt: number;
   entries: ActiveEntry[];
+  /** Exercice en cours (index dans entries) */
+  cur?: number;
+  rest?: RestTimer;
+  view?: 'focus' | 'list';
 }
 
 export interface Settings {
+  /** Repos entre deux séries (s) */
   restSec: number;
+  /** Repos entre deux exercices (s) */
+  restExSec: number;
+  /** Bip à la fin du repos */
+  sound: boolean;
   model: string;
   /** Dépôt GitHub privé des données Garmin, ex. "pseudo/carnet-data". */
   garminRepo: string;

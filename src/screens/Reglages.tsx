@@ -12,6 +12,8 @@ import { fDateL } from '../logic';
 import { dayStr } from '../logic';
 import type { Data } from '../types';
 
+const restLabel = (s: number) => (s < 120 ? `${s} s` : `${Math.floor(s / 60)} min${s % 60 ? ' ' + (s % 60) : ''}`);
+
 function validBackup(x: any): x is Pick<Data, 'exercises' | 'workouts' | 'logs'> {
   return x && typeof x === 'object' && x.exercises && typeof x.exercises === 'object' && Array.isArray(x.workouts) && Array.isArray(x.logs);
 }
@@ -161,12 +163,23 @@ export function Reglages() {
 
       <Card>
         <H3>Temps de repos</H3>
-        <Meta>Lancé automatiquement quand tu valides une série.</Meta>
+        <Meta>Le chrono se lance quand tu valides une série.</Meta>
+        <Meta style={{ fontWeight: '600', marginTop: 4 }}>Entre deux séries</Meta>
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
           {[60, 90, 120, 150, 180, 240].map((s) => (
-            <Chip key={s} label={s < 120 ? `${s} s` : `${Math.floor(s / 60)} min${s % 60 ? ' ' + (s % 60) : ''}`} active={data.settings.restSec === s} onPress={() => setSettings({ restSec: s })} />
+            <Chip key={s} label={restLabel(s)} active={data.settings.restSec === s} onPress={() => setSettings({ restSec: s })} />
           ))}
         </View>
+        <Meta style={{ fontWeight: '600', marginTop: 4 }}>Entre deux exercices</Meta>
+        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+          {[60, 90, 120, 150, 180, 240].map((s) => (
+            <Chip key={s} label={restLabel(s)} active={data.settings.restExSec === s} onPress={() => setSettings({ restExSec: s })} />
+          ))}
+        </View>
+        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginTop: 4 }}>
+          <Chip label={data.settings.sound ? 'Bip de fin : activé' : 'Bip de fin : coupé'} active={data.settings.sound} onPress={() => setSettings({ sound: !data.settings.sound })} />
+        </View>
+        <Meta style={{ fontSize: 13 }}>Sur iPhone, le bip ne sonne pas si le mode silencieux est activé.</Meta>
       </Card>
 
       <Card>

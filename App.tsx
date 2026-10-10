@@ -9,6 +9,7 @@ import { StoreProvider, useStore } from './src/store';
 import { useTheme } from './src/theme';
 import { NavCtx, type Nav } from './src/ui';
 import { pad } from './src/logic';
+import { beep } from './src/platform/beep';
 import type { Tab } from './src/types';
 import { Seances } from './src/screens/Seances';
 import { Session } from './src/screens/Session';
@@ -49,40 +50,43 @@ function Shell() {
   useCloudSync(true);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [restEnd, setRestEnd] = useState<number | null>(null);
+  const { updateActive } = useStore();
+  const rest = data.active?.rest;
+  const restEnd = rest?.end ?? null;
   const [now, setNow] = useState(Date.now());
+  const lastTick = useRef(0);
 
   const toast = useCallback((m: string) => {
     setToastMsg(m);
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToastMsg(null), 2400);
   }, []);
-  const restSec = data.settings.restSec;
-  const nav = useMemo<Nav>(
-    () => ({ tab, go: setTab, toast, startRest: () => { setRestEnd(Date.now() + restSec * 1000); setNow(Date.now()); } }),
-    [tab, toast, restSec],
-  );
+  const nav = useMemo<Nav>(() => ({ tab, go: setTab, toast, startRest: () => {} }), [tab, toast]);
 
-  // Minuteur de repos
+  // Minuteur de repos (gardé dans la séance en cours : il survit à la fermeture de l'appli)
   useEffect(() => {
     if (!restEnd) return;
-    const i = setInterval(() => setNow(Date.now()), 500);
+    setNow(Date.now());
+    const i = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(i);
   }, [restEnd]);
   useEffect(() => {
-    if (restEnd && now >= restEnd) {
-      setRestEnd(null);
+    if (!restEnd) return;
+    const left = Math.ceil((restEnd - now) / 1000);
+    if (left <= 0) {
+      updateActive((x) => (x.rest && x.rest.end === restEnd ? { ...x, rest: undefined } : x));
       buzz('alert');
-      toast('Repos terminé : série suivante');
+      if (data.settings.sound) beep('end');
+      if (tab !== 'seance' || data.active?.view === 'list') toast(rest?.kind === 'ex' ? 'Repos terminé : exercice suivant' : 'Repos terminé : série suivante');
+    } else if (left <= 3 && left !== lastTick.current) {
+      lastTick.current = left;
+      if (data.settings.sound) beep('tick');
     }
-  }, [now, restEnd, toast]);
+  }, [now, restEnd]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => s === 'active' && setNow(Date.now()));
     return () => sub.remove();
   }, []);
-  useEffect(() => {
-    if (!data.active) setRestEnd(null);
-  }, [data.active]);
 
   const current: Tab = tab === 'seance' && !data.active ? 'seances' : tab;
   const tabs: [Tab, string][] = [['seances', 'Séances'], ...(data.active ? ([['seance', 'En cours']] as [Tab, string][]) : []), ['exos', 'Exercices'], ['progres', 'Progrès'], ['coach', 'Coach']];
@@ -102,15 +106,15 @@ function Shell() {
           {current === 'reglages' && <Reglages />}
         </View>
 
-        {restEnd ? (
+        {restEnd && now < restEnd && !(current === 'seance' && (data.active?.view ?? 'focus') === 'focus') ? (
           <View style={{ position: 'absolute', bottom: ins.bottom + 76, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: t.ink, borderRadius: 999, paddingVertical: 8, paddingLeft: 18, paddingRight: 8 }}>
             <Text style={{ color: t.bg, fontSize: 18, fontWeight: '800', fontVariant: ['tabular-nums'] }}>
               Repos {Math.floor(left / 60)}:{pad(left % 60)}
             </Text>
-            <Pressable onPress={() => setRestEnd((e) => (e ? e + 30000 : e))} style={{ backgroundColor: t.bg, borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 }}>
+            <Pressable onPress={() => updateActive((x) => (x.rest ? { ...x, rest: { ...x.rest, end: x.rest.end + 30000, total: x.rest.total + 30 } } : x))} style={{ backgroundColor: t.bg, borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 }}>
               <Text style={{ color: t.ink, fontWeight: '700' }}>+30 s</Text>
             </Pressable>
-            <Pressable onPress={() => setRestEnd(null)} style={{ backgroundColor: t.bg, borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 }}>
+            <Pressable onPress={() => updateActive((x) => ({ ...x, rest: undefined }))} style={{ backgroundColor: t.bg, borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 }}>
               <Text style={{ color: t.ink, fontWeight: '700' }}>Passer</Text>
             </Pressable>
           </View>
