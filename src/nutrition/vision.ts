@@ -1,4 +1,4 @@
-import { CoachError } from '../coach';
+import { CoachError, openAIError } from '../coach';
 
 export interface PhotoItem {
   name: string;
@@ -47,11 +47,7 @@ export async function analyzeMeal(apiKey: string, model: string, dataUrl: string
     throw new CoachError('Pas de connexion : réessaie quand tu captes.');
   }
   const body: any = await res.json().catch(() => null);
-  if (!res.ok) {
-    if (res.status === 401) throw new CoachError('Clé OpenAI refusée : vérifie-la dans Réglages.');
-    if (res.status === 429) throw new CoachError('Limite ou crédit OpenAI atteint.');
-    throw new CoachError(body?.error?.message ?? `Erreur OpenAI (${res.status}).`);
-  }
+  if (!res.ok) throw openAIError(res.status, body, model);
   const text: string = body?.choices?.[0]?.message?.content ?? '';
   let j: any;
   try {

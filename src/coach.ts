@@ -46,6 +46,17 @@ export type ChatMsg = { role: 'user' | 'assistant'; content: string };
 
 export class CoachError extends Error {}
 
+/** Message clair pour les erreurs OpenAI courantes. */
+export function openAIError(status: number, body: any, model: string): CoachError {
+  const code = body?.error?.code ?? body?.error?.type;
+  if (status === 401) return new CoachError('Clé OpenAI refusée : vérifie-la dans Réglages.');
+  if (code === 'insufficient_quota')
+    return new CoachError("Pas de crédit API sur ton compte OpenAI. L'abonnement ChatGPT (Go, Plus…) ne compte pas : ajoute quelques euros sur platform.openai.com/settings/organization/billing. En attendant, utilise « Copier mes données » ci-dessous.");
+  if (status === 429) return new CoachError('Trop de requêtes d\'un coup : patiente une minute puis réessaie.');
+  if (status === 404) return new CoachError(`Modèle « ${model} » introuvable : change-le dans Réglages.`);
+  return new CoachError(body?.error?.message ?? `Erreur OpenAI (${status}).`);
+}
+
 export async function askOpenAI(apiKey: string, model: string, system: string, chat: ChatMsg[], signal?: AbortSignal): Promise<string> {
   let res: Response;
   try {
@@ -60,12 +71,7 @@ export async function askOpenAI(apiKey: string, model: string, system: string, c
     throw new CoachError('Pas de connexion internet : réessaie quand tu captes.');
   }
   const body: any = await res.json().catch(() => null);
-  if (!res.ok) {
-    if (res.status === 401) throw new CoachError('Clé OpenAI refusée : vérifie-la dans Réglages.');
-    if (res.status === 429) throw new CoachError('Limite ou crédit OpenAI atteint : vérifie ton compte OpenAI (facturation) puis réessaie.');
-    if (res.status === 404) throw new CoachError(`Modèle « ${model} » introuvable : change-le dans Réglages.`);
-    throw new CoachError(body?.error?.message ?? `Erreur OpenAI (${res.status}).`);
-  }
+  if (!res.ok) throw openAIError(res.status, body, model);
   const text: string | undefined = body?.choices?.[0]?.message?.content;
   if (!text) throw new CoachError('Réponse vide, réessaie.');
   return text.trim();
@@ -125,7 +131,7 @@ ${notes ? `Consignes de l'utilisateur : ${notes}\n` : ''}Réponds uniquement en 
     throw new CoachError('Pas de connexion : réessaie quand tu captes.');
   }
   const body: any = await res.json().catch(() => null);
-  if (!res.ok) throw new CoachError(res.status === 401 ? 'Clé OpenAI refusée : vérifie-la dans Réglages.' : body?.error?.message ?? `Erreur OpenAI (${res.status}).`);
+  if (!res.ok) throw openAIError(res.status, body, model);
   const text: string = body?.choices?.[0]?.message?.content ?? '';
   let j: any;
   try {
