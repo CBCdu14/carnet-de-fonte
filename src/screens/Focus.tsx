@@ -5,6 +5,7 @@ import { useStore } from '../store';
 import { useTheme } from '../theme';
 import { Btn, Card, Chip, Field, Meta, Plates, Sheet, Body, H2, useNav } from '../ui';
 import { tipFor, ZONES } from '../tips';
+import { BodyMap } from '../BodyMap';
 import { focusSession, getKey } from '../coach';
 import { EQUIP } from '../logic';
 import { fmt, goalFor, parseNum, sharedCount } from '../logic';
@@ -170,6 +171,7 @@ export function Focus({ onFinish }: { onFinish: () => void }) {
   const techSheetEl = (
     <Sheet visible={techSheet} onClose={() => setTechSheet(false)}>
       <H2>{ex?.name ?? e.name}</H2>
+      <BodyMap name={ex?.name ?? e.name} muscle={ex?.muscle} />
       {tech ? (
         <>
           <Meta style={{ fontSize: 13 }}>POINTS CLÉS</Meta>
@@ -269,6 +271,7 @@ export function Focus({ onFinish }: { onFinish: () => void }) {
             Série {j + 1} sur {e.sets.length} · {fmt(kg)} kg · objectif {goal} reps
           </Meta>
           {ex?.setup ? <Meta style={{ color: t.ink }}>⚙︎ {ex.setup}</Meta> : null}
+          {rest.kind === 'ex' ? <View style={{ marginTop: 8 }}><BodyMap name={ex?.name ?? e.name} muscle={ex?.muscle} compact /></View> : null}
           {zoneTip ? <Meta style={{ color: t.accent }}>{a.focus?.zone} : {zoneTip}</Meta> : null}
           {rest.kind === 'ex' && others.length ? <Btn small kind="ghost" label="Machine occupée ? Changer d'exercice" onPress={() => setPicker(true)} style={{ alignSelf: 'flex-start', marginTop: 6 }} /> : null}
         </Card>
