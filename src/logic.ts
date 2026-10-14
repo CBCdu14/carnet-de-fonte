@@ -1,4 +1,4 @@
-import type { Active, Exercise, Log, PrevPerf, Workout } from './types';
+import type { RepProg, Active, Exercise, Log, PrevPerf, Workout } from './types';
 
 export const MUSCLES = ['Pectoraux', 'Dos', 'Épaules', 'Biceps', 'Triceps', 'Jambes', 'Fessiers', 'Mollets', 'Abdos', 'Autre'];
 export const EQUIP: Record<string, string> = {
@@ -138,9 +138,10 @@ export function proposals(active: Active, exercises: Record<string, Exercise>): 
     if (!done.length) continue;
     const top = Math.max(...done.map((s) => parseNum(s.kg)));
     const all = done.length === e.sets.length && done.every((s) => parseNum(s.r) >= e.target);
-    if (all && top >= ex.load) {
+    const pg = progOf(ex, e.target);
+    if (all && pg.reps >= pg.max && top >= ex.load) {
       const nv = r2(Math.max(top, ex.load) + (ex.step || 2.5));
-      out.push({ ex: ex.id, nv, on: true, kind: 'up', text: `Toutes les séries réussies à ${e.target} reps. Passer à ${fmt(nv)} kg la prochaine fois ?` });
+      out.push({ ex: ex.id, nv, on: true, kind: 'up', text: `${pg.max} reps sur toutes les séries. Passer à ${fmt(nv)} kg et repartir à ${pg.min} reps ?` });
     } else if (e.prev && done.length === e.sets.length && e.sets.length * e.target - done.reduce((a, s) => a + parseNum(s.r), 0) >= e.sets.length * 3 && top > Math.max(...e.prev.sets.map((s) => s.kg)) + 1e-9 && top >= ex.load) {
       const nv = r2(Math.max(0, top - (ex.step || 2.5)));
       out.push({ ex: ex.id, nv, on: true, kind: 'down', text: `Trop dur à ${fmt(top)} kg. Revenir à ${fmt(nv)} kg la prochaine fois ?` });
@@ -169,6 +170,29 @@ export function lastPerf(logs: Log[], exId: string): PrevPerf | undefined {
  *  quand toutes les séries atteignent l'objectif, la charge augmente d'un pas à la séance suivante. */
 export function goalFor(_prev: { kg: number; r: number } | undefined, _kg: number, target: number): number {
   return Math.max(1, target);
+}
+
+export const DEF_PROG = { min: 8, max: 15 };
+export function progOf(ex: Exercise | undefined, fallbackReps: number): RepProg {
+  if (ex?.prog) return ex.prog;
+  const { min, max } = DEF_PROG;
+  return { min, max, reps: Math.min(max, Math.max(min, fallbackReps || min)), hits: 0 };
+}
+/** Palier suivant après une séance réussie (toutes les séries à l'objectif). */
+export function nextProg(p: RepProg): { prog: RepProg; loadUp: boolean } {
+  if (p.reps >= p.max) return { prog: { ...p, reps: p.min, hits: 0 }, loadUp: true };
+  const need = p.reps <= p.min ? 2 : 1;
+  const hits = p.hits + 1;
+  if (hits >= need) return { prog: { ...p, reps: Math.min(p.max, p.reps + 1), hits: 0 }, loadUp: false };
+  return { prog: { ...p, hits }, loadUp: false };
+}
+/** Texte « la prochaine fois » selon le palier. */
+export function progText(ex: Exercise, p: RepProg, success: boolean, kg: number): string {
+  if (!success) return `On reste à ${fmt(kg)} kg, objectif ${p.reps} reps sur toutes les séries.`;
+  const n = nextProg(p);
+  if (n.loadUp) return `${p.max} reps atteintes partout : ${fmt(kg + (ex.step || 2.5))} kg la prochaine fois, retour à ${p.min} reps.`;
+  if (n.prog.reps > p.reps) return `Objectif atteint : ${n.prog.reps} reps la prochaine fois.`;
+  return `Réussi une fois à ${p.reps} reps : encore une séance à ${p.reps}, puis ${p.reps + 1}.`;
 }
 
 export type Verdict = 'up' | 'ok' | 'close' | 'miss' | 'skip';
@@ -208,10 +232,11 @@ export function review(active: Active, exercises: Record<string, Exercise>): Rev
       else if (total < pt) delta = `${total - pt} rep${pt - total > 1 ? 's' : ''} par rapport à la dernière fois`;
       else delta = 'Comme la dernière fois';
     }
-    if (all) return { ex: e.ex, name, verdict: 'up', reps: reps.join('·'), kg, delta, next: `Objectif atteint sur toutes les séries : ${fmt(kg + step)} kg la prochaine fois.` };
-    if (missing <= 2) return { ex: e.ex, name, verdict: 'close', reps: reps.join('·'), kg, delta, next: `Il manque ${missing} rep${missing > 1 ? 's' : ''} : on reste à ${fmt(kg)} kg, objectif ${e.target} partout.` };
+    const pg = progOf(ex, e.target);
+    if (all && ex) return { ex: e.ex, name, verdict: 'up', reps: reps.join('·'), kg, delta, next: progText(ex, pg, true, kg) };
+    if (missing <= 2) return { ex: e.ex, name, verdict: 'close', reps: reps.join('·'), kg, delta, next: `Il manque ${missing} rep${missing > 1 ? 's' : ''} : on reste à ${fmt(kg)} kg, objectif ${pg.reps} partout.` };
     if (missing >= e.sets.length * 3 && e.prev && kg > Math.max(...e.prev.sets.map((s) => s.kg)) + 1e-9)
       return { ex: e.ex, name, verdict: 'miss', reps: reps.join('·'), kg, delta, next: `Trop dur à ${fmt(kg)} kg : revenir à ${fmt(kg - step)} kg la prochaine fois.` };
-    return { ex: e.ex, name, verdict: 'miss', reps: reps.join('·'), kg, delta, next: `On reste à ${fmt(kg)} kg jusqu'à ${e.target} reps sur toutes les séries.` };
+    return { ex: e.ex, name, verdict: 'miss', reps: reps.join('·'), kg, delta, next: `On reste à ${fmt(kg)} kg jusqu'à ${pg.reps} reps sur toutes les séries.` };
   });
 }

@@ -5,7 +5,7 @@ import type { Active, Data, DayPlan, Exercise, Food, GarminData, Log, MealItem, 
 import { SEED_RECIPES } from './nutrition/recipes';
 import { DEFAULT_TARGETS } from './nutrition/calc';
 import { merge, toPayload, type Payload } from './cloud';
-import { dayStr, goalFor, lastPerf, parseNum, r2, uid } from './logic';
+import { dayStr, lastPerf, parseNum, r2, uid, progOf, nextProg } from './logic';
 import { seedExercises, seedWorkouts } from './seed';
 
 const K = {
@@ -210,6 +210,7 @@ export function StoreProvider({ children, fallback }: { children: React.ReactNod
             equip: input.equip,
             step: input.step,
             setup: input.setup?.trim() || undefined,
+            prog: input.prog,
             load: prev?.load ?? 0,
             loadHistory: prev?.loadHistory ?? [],
           };
@@ -254,11 +255,11 @@ export function StoreProvider({ children, fallback }: { children: React.ReactNod
                 return {
                   ex: it.ex,
                   name: ex.name,
-                  target: it.reps,
+                  target: progOf(ex, it.reps).reps,
                   prev,
                   sets: Array.from({ length: it.sets }, (_, j) => ({
                     kg: String(ex.load).replace('.', ','),
-                    r: String(goalFor(prev?.sets[j], ex.load, it.reps)),
+                    r: String(progOf(ex, it.reps).reps),
                     done: false,
                   })),
                 };
@@ -289,6 +290,18 @@ export function StoreProvider({ children, fallback }: { children: React.ReactNod
           };
           const exercises = { ...d.exercises };
           for (const p of apply) if (exercises[p.ex]) exercises[p.ex] = withLoad(exercises[p.ex], p.nv);
+          // Progression des reps : palier suivant quand toutes les séries sont à l'objectif
+          for (const e of a.entries) {
+            const ex = exercises[e.ex];
+            if (!ex) continue;
+            const done = e.sets.filter((s) => s.done);
+            const ok = done.length === e.sets.length && done.every((s) => parseNum(s.r) >= e.target);
+            if (!ok) continue;
+            const pg = progOf(ex, e.target);
+            const n = nextProg(pg);
+            if (n.loadUp && !apply.some((p) => p.ex === e.ex && p.nv > ex.load - 1e-9 && p.nv > (d.exercises[e.ex]?.load ?? 0))) continue; // montée refusée : on reste au max
+            exercises[e.ex] = { ...ex, prog: n.prog, u: now() };
+          }
           return { ...d, exercises, logs: [log, ...d.logs], active: null };
         }),
       abandonWorkout: () => set((d) => ({ ...d, active: null })),

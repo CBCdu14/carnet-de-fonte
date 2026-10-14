@@ -4,7 +4,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { useStore } from '../store';
 import { useTheme } from '../theme';
 import { Btn, Card, Empty, H2, Header, Hint, LoadCtl, Meta, NavBtn, Screen, SectionTitle, Sheet, Body, useNav } from '../ui';
-import { EQUIP, fDate, fmt, lastDone, lastPerf, sharedCount } from '../logic';
+import { EQUIP, fDate, fmt, lastDone, lastPerf, progOf, sharedCount } from '../logic';
 import type { Workout } from '../types';
 import { WorkoutSheet } from '../sheets/WorkoutSheet';
 
@@ -110,7 +110,7 @@ export function Seances() {
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Body>{ex?.name ?? it.name}</Body>
                   <Meta>
-                    {it.sets} × {it.reps}
+                    {it.sets} × {progOf(ex, it.reps).reps}
                     {prev ? `  ·  dernière ${prev.sets.map((p) => fmt(p.r)).join('/')}` : ''}
                   </Meta>
                   {n > 1 || ex?.equip === 'halteres' ? (
