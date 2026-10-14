@@ -1,11 +1,45 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { useStore } from '../store';
 import { useTheme } from '../theme';
 import { Btn, Card, Chip, Empty, H3, Header, LinkBtn, Meta, Screen, Body, useNav } from '../ui';
-import { exPoints, fDateL, fmt, logVolume, weeklyVolume } from '../logic';
+import { bilanText, exPoints, fDateL, fmt, logVolume, reviewLog, weeklyVolume, type Review } from '../logic';
+import type { Log } from '../types';
 import { LoadChart, VolumeChart } from '../charts';
 import { Corps } from './Corps';
+
+function Bilan({ log, rev }: { log: Log; rev: Review[] }) {
+  const t = useTheme();
+  const { data } = useStore();
+  const { toast } = useNav();
+  const shown = rev.filter((r) => r.verdict !== 'skip');
+  const skipped = rev.filter((r) => r.verdict === 'skip');
+  return (
+    <View style={{ gap: 6 }}>
+      {shown.map((r, k) => {
+        const col = r.verdict === 'up' ? t.good : r.verdict === 'miss' ? t.bad : t.accent;
+        const icon = r.verdict === 'up' ? '▲' : r.verdict === 'close' ? '≈' : '▼';
+        return (
+          <View key={r.ex + k} style={{ flexDirection: 'row', gap: 8, paddingTop: k ? 6 : 0, borderTopWidth: k ? 0.5 : 0, borderTopColor: t.line }}>
+            <Text style={{ color: col, width: 16, textAlign: 'center', marginTop: 2 }}>{icon}</Text>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+                <Body style={{ fontWeight: '600', flex: 1, fontSize: 15 }}>{r.name}</Body>
+                <Meta style={{ fontVariant: ['tabular-nums'] }}>{fmt(r.kg)} kg · {r.reps}</Meta>
+              </View>
+              <Meta style={{ fontSize: 13 }}>{r.delta}</Meta>
+              <Meta style={{ fontSize: 13, color: col }}>{r.next}</Meta>
+            </View>
+          </View>
+        );
+      })}
+      {skipped.length ? <Meta style={{ fontSize: 13 }}>Non fait : {skipped.map((r) => r.name).join(', ')}</Meta> : null}
+      {log.note ? <Meta>« {log.note} »</Meta> : null}
+      <Btn small kind="ghost" label="Copier le bilan (pour ChatGPT…)" onPress={async () => { await Clipboard.setStringAsync(bilanText(log, rev, data.exercises, data.workouts)); toast('Bilan copié'); }} style={{ alignSelf: 'flex-start', marginTop: 4 }} />
+    </View>
+  );
+}
 
 export function Progres() {
   const t = useTheme();
@@ -64,6 +98,14 @@ export function Progres() {
   return (
     <Screen header={<Header title="Progrès" />}>
       {seg}
+      <Card style={{ gap: 8 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <H3>Dernière séance</H3>
+          <Meta>{data.logs[0].workoutName} · {fDateL(data.logs[0].date)}</Meta>
+        </View>
+        <Bilan log={data.logs[0]} rev={reviewLog(data.logs[0], data.logs, data.exercises)} />
+      </Card>
+
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
         {[...withData, ...exs.filter((e) => !withData.includes(e))].map((e) => (
           <Chip key={e.id} label={e.name} active={e.id === exId} onPress={() => setSel(e.id)} />
@@ -118,13 +160,7 @@ export function Progres() {
               </Pressable>
               {isOpen ? (
                 <View style={{ gap: 6 }}>
-                  {l.entries.map((e, k) => (
-                    <View key={k} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
-                      <Body style={{ flexShrink: 1, fontSize: 15 }}>{data.exercises[e.ex]?.name ?? e.name}</Body>
-                      <Meta style={{ flexShrink: 1, textAlign: 'right' }}>{e.sets.filter((s) => s.done).map((s) => `${fmt(s.kg)}×${s.r}`).join(' · ') || '–'}</Meta>
-                    </View>
-                  ))}
-                  {l.note ? <Meta>« {l.note} »</Meta> : null}
+                  <Bilan log={l} rev={reviewLog(l, data.logs, data.exercises)} />
                   <LinkBtn
                     color={t.bad}
                     label={confirm === l.id ? 'Confirmer la suppression' : 'Supprimer cette séance'}

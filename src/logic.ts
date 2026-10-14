@@ -200,6 +200,7 @@ export interface Review {
   ex: string;
   name: string;
   verdict: Verdict;
+  target: number;
   /** reps faites / séries, ex. "12·12·10" */
   reps: string;
   kg: number;
@@ -216,7 +217,7 @@ export function review(active: Active, exercises: Record<string, Exercise>): Rev
     const name = ex?.name ?? e.name;
     const done = e.sets.filter((s) => s.done);
     const step = ex?.step || 2.5;
-    if (!done.length) return { ex: e.ex, name, verdict: 'skip' as Verdict, reps: '—', kg: 0, delta: 'Non fait', next: 'On le garde tel quel.' };
+    if (!done.length) return { ex: e.ex, name, verdict: 'skip' as Verdict, target: e.target, reps: '—', kg: 0, delta: 'Non fait', next: 'On le garde tel quel.' };
     const reps = done.map((s) => parseNum(s.r));
     const kg = Math.max(...done.map((s) => parseNum(s.kg)));
     const total = reps.reduce((a, b) => a + b, 0);
@@ -233,10 +234,47 @@ export function review(active: Active, exercises: Record<string, Exercise>): Rev
       else delta = 'Comme la dernière fois';
     }
     const pg = progOf(ex, e.target);
-    if (all && ex) return { ex: e.ex, name, verdict: 'up', reps: reps.join('·'), kg, delta, next: progText(ex, pg, true, kg) };
-    if (missing <= 2) return { ex: e.ex, name, verdict: 'close', reps: reps.join('·'), kg, delta, next: `Il manque ${missing} rep${missing > 1 ? 's' : ''} : on reste à ${fmt(kg)} kg, objectif ${pg.reps} partout.` };
+    if (all && ex) return { ex: e.ex, name, verdict: 'up', target: e.target, reps: reps.join('·'), kg, delta, next: progText(ex, pg, true, kg) };
+    if (missing <= 2) return { ex: e.ex, name, verdict: 'close', target: e.target, reps: reps.join('·'), kg, delta, next: `Il manque ${missing} rep${missing > 1 ? 's' : ''} : on reste à ${fmt(kg)} kg, objectif ${pg.reps} partout.` };
     if (missing >= e.sets.length * 3 && e.prev && kg > Math.max(...e.prev.sets.map((s) => s.kg)) + 1e-9)
-      return { ex: e.ex, name, verdict: 'miss', reps: reps.join('·'), kg, delta, next: `Trop dur à ${fmt(kg)} kg : revenir à ${fmt(kg - step)} kg la prochaine fois.` };
-    return { ex: e.ex, name, verdict: 'miss', reps: reps.join('·'), kg, delta, next: `On reste à ${fmt(kg)} kg jusqu'à ${pg.reps} reps sur toutes les séries.` };
+      return { ex: e.ex, name, verdict: 'miss', target: e.target, reps: reps.join('·'), kg, delta, next: `Trop dur à ${fmt(kg)} kg : revenir à ${fmt(kg - step)} kg la prochaine fois.` };
+    return { ex: e.ex, name, verdict: 'miss', target: e.target, reps: reps.join('·'), kg, delta, next: `On reste à ${fmt(kg)} kg jusqu'à ${pg.reps} reps sur toutes les séries.` };
   });
+}
+
+/** Bilan d'une séance enregistrée : comparée à la fois précédente pour chaque exercice. */
+export function reviewLog(log: Log, logs: Log[], exercises: Record<string, Exercise>): Review[] {
+  const older = logs.filter((l) => l.date < log.date).sort((a, b) => b.date.localeCompare(a.date));
+  const active: Active = {
+    workoutId: log.workoutId,
+    name: log.workoutName,
+    startedAt: new Date(log.date).getTime(),
+    entries: log.entries.map((e) => ({
+      ex: e.ex,
+      name: e.name,
+      target: e.target,
+      prev: lastPerf(older, e.ex),
+      sets: e.sets.map((s) => ({ kg: String(s.kg), r: String(s.r), done: s.done })),
+    })),
+  };
+  return review(active, exercises);
+}
+
+/** Bilan en texte, à coller dans ChatGPT ou ailleurs. */
+/** Objectif de reps actuel d'un exercice (palier enregistré, sinon celui des séances). */
+export function goalOf(ex: Exercise, workouts: Workout[]): number {
+  const it = workouts.flatMap((w) => w.items).find((i) => i.ex === ex.id);
+  return progOf(ex, it?.reps ?? DEF_PROG.min).reps;
+}
+
+export function bilanText(log: Log, rev: Review[], exercises: Record<string, Exercise>, workouts: Workout[]): string {
+  const lines = [`Séance ${log.workoutName} du ${fDateL(log.date)} (${log.durationMin} min, tonnage ${fmt(Math.round(logVolume(log)))} kg)`];
+  for (const r of rev) {
+    if (r.verdict === 'skip') { lines.push(`- ${r.name} : non fait`); continue; }
+    const mark = r.verdict === 'up' ? '✅' : r.verdict === 'close' ? '🟡' : '🔴';
+    lines.push(`- ${mark} ${r.name} : ${fmt(r.kg)} kg × ${r.reps} (objectif ${r.target} reps) — ${r.delta}. ${r.next}`);
+  }
+  if (log.note) lines.push(`Note : ${log.note}`);
+  lines.push('', 'Charges actuelles : ' + Object.values(exercises).map((e) => `${e.name} ${fmt(e.load)} kg, objectif ${goalOf(e, workouts)} reps`).join(' ; '));
+  return lines.join('\n');
 }
