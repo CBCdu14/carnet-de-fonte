@@ -125,7 +125,7 @@ export interface Proposal {
   ex: string;
   nv: number;
   on: boolean;
-  kind: 'up' | 'keep';
+  kind: 'up' | 'keep' | 'down';
   text: string;
 }
 /** Propositions de charge en fin de séance (double progression). */
@@ -141,6 +141,9 @@ export function proposals(active: Active, exercises: Record<string, Exercise>): 
     if (all && top >= ex.load) {
       const nv = r2(Math.max(top, ex.load) + (ex.step || 2.5));
       out.push({ ex: ex.id, nv, on: true, kind: 'up', text: `Toutes les séries réussies à ${e.target} reps. Passer à ${fmt(nv)} kg la prochaine fois ?` });
+    } else if (e.prev && done.length === e.sets.length && e.sets.length * e.target - done.reduce((a, s) => a + parseNum(s.r), 0) >= e.sets.length * 3 && top > Math.max(...e.prev.sets.map((s) => s.kg)) + 1e-9 && top >= ex.load) {
+      const nv = r2(Math.max(0, top - (ex.step || 2.5)));
+      out.push({ ex: ex.id, nv, on: true, kind: 'down', text: `Trop dur à ${fmt(top)} kg. Revenir à ${fmt(nv)} kg la prochaine fois ?` });
     } else if (top !== ex.load) {
       out.push({ ex: ex.id, nv: top, on: false, kind: 'keep', text: `Travaillé à ${fmt(top)} kg (charge enregistrée : ${fmt(ex.load)} kg). Garder ${fmt(top)} kg ?` });
     }
@@ -162,12 +165,53 @@ export function lastPerf(logs: Log[], exId: string): PrevPerf | undefined {
   return undefined;
 }
 
-/** Objectif de reps d'une série : +1 rep par rapport à la dernière fois à la même charge,
- *  sans dépasser l'objectif de la séance ; mêmes reps si la charge a augmenté. */
-export function goalFor(prev: { kg: number; r: number } | undefined, kg: number, target: number): number {
-  if (!prev) return target;
-  const pr = Math.floor(prev.r);
-  if (kg > prev.kg + 1e-9) return Math.max(1, Math.min(target, pr));
-  if (kg < prev.kg - 1e-9) return target;
-  return Math.max(1, Math.min(target, pr + 1));
+/** Objectif de reps : toujours celui de l'exercice dans la séance. La progression se fait par la charge :
+ *  quand toutes les séries atteignent l'objectif, la charge augmente d'un pas à la séance suivante. */
+export function goalFor(_prev: { kg: number; r: number } | undefined, _kg: number, target: number): number {
+  return Math.max(1, target);
+}
+
+export type Verdict = 'up' | 'ok' | 'close' | 'miss' | 'skip';
+export interface Review {
+  ex: string;
+  name: string;
+  verdict: Verdict;
+  /** reps faites / séries, ex. "12·12·10" */
+  reps: string;
+  kg: number;
+  /** comparaison avec la dernière fois */
+  delta: string;
+  /** ce qui change la prochaine fois */
+  next: string;
+}
+
+/** Bilan de fin de séance, exercice par exercice. */
+export function review(active: Active, exercises: Record<string, Exercise>): Review[] {
+  return active.entries.map((e) => {
+    const ex = exercises[e.ex];
+    const name = ex?.name ?? e.name;
+    const done = e.sets.filter((s) => s.done);
+    const step = ex?.step || 2.5;
+    if (!done.length) return { ex: e.ex, name, verdict: 'skip' as Verdict, reps: '—', kg: 0, delta: 'Non fait', next: 'On le garde tel quel.' };
+    const reps = done.map((s) => parseNum(s.r));
+    const kg = Math.max(...done.map((s) => parseNum(s.kg)));
+    const total = reps.reduce((a, b) => a + b, 0);
+    const all = done.length === e.sets.length && reps.every((r) => r >= e.target);
+    const missing = e.sets.length * e.target - total;
+    let delta = 'Première fois';
+    if (e.prev) {
+      const pk = Math.max(...e.prev.sets.map((s) => s.kg));
+      const pt = e.prev.sets.reduce((a, s) => a + s.r, 0);
+      if (kg > pk + 1e-9) delta = `Charge montée : ${fmt(pk)} → ${fmt(kg)} kg`;
+      else if (kg < pk - 1e-9) delta = `Charge baissée : ${fmt(pk)} → ${fmt(kg)} kg`;
+      else if (total > pt) delta = `+${total - pt} rep${total - pt > 1 ? 's' : ''} par rapport à la dernière fois`;
+      else if (total < pt) delta = `${total - pt} rep${pt - total > 1 ? 's' : ''} par rapport à la dernière fois`;
+      else delta = 'Comme la dernière fois';
+    }
+    if (all) return { ex: e.ex, name, verdict: 'up', reps: reps.join('·'), kg, delta, next: `Objectif atteint sur toutes les séries : ${fmt(kg + step)} kg la prochaine fois.` };
+    if (missing <= 2) return { ex: e.ex, name, verdict: 'close', reps: reps.join('·'), kg, delta, next: `Il manque ${missing} rep${missing > 1 ? 's' : ''} : on reste à ${fmt(kg)} kg, objectif ${e.target} partout.` };
+    if (missing >= e.sets.length * 3 && e.prev && kg > Math.max(...e.prev.sets.map((s) => s.kg)) + 1e-9)
+      return { ex: e.ex, name, verdict: 'miss', reps: reps.join('·'), kg, delta, next: `Trop dur à ${fmt(kg)} kg : revenir à ${fmt(kg - step)} kg la prochaine fois.` };
+    return { ex: e.ex, name, verdict: 'miss', reps: reps.join('·'), kg, delta, next: `On reste à ${fmt(kg)} kg jusqu'à ${e.target} reps sur toutes les séries.` };
+  });
 }

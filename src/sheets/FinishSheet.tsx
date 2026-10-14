@@ -4,7 +4,7 @@ import { buzz } from '../platform/buzz';
 import { useStore } from '../store';
 import { useTheme } from '../theme';
 import { Btn, Field, H2, H3, LinkBtn, Meta, Sheet, Body, useNav } from '../ui';
-import { fmt, parseNum, proposals } from '../logic';
+import { fmt, parseNum, proposals, review } from '../logic';
 
 export function FinishSheet({ onClose }: { onClose: () => void }) {
   const t = useTheme();
@@ -12,6 +12,8 @@ export function FinishSheet({ onClose }: { onClose: () => void }) {
   const { go, toast } = useNav();
   const a = data.active!;
   const props = useMemo(() => proposals(a, data.exercises), [a, data.exercises]);
+  const rev = useMemo(() => review(a, data.exercises), [a, data.exercises]);
+  const ups = rev.filter((r) => r.verdict === 'up').length;
   const [on, setOn] = useState<boolean[]>(() => props.map((p) => p.on));
   const [note, setNote] = useState('');
   const [confirmAb, setConfirmAb] = useState(false);
@@ -45,6 +47,30 @@ export function FinishSheet({ onClose }: { onClose: () => void }) {
         {stat('Séries', `${doneSets}/${tot}`)}
         {stat('Tonnage', fmt(Math.round(vol)))}
       </View>
+      {doneSets ? (
+        <View style={{ gap: 4 }}>
+          <H3>Bilan</H3>
+          <Meta>{ups ? `${ups} exercice${ups > 1 ? 's' : ''} au max : la charge monte.` : 'Pas encore de charge à monter : on consolide les reps.'}</Meta>
+          {rev.filter((r) => r.verdict === 'skip').length ? <Meta style={{ fontSize: 14 }}>Non fait : {rev.filter((r) => r.verdict === 'skip').map((r) => r.name).join(', ')}</Meta> : null}
+          {rev.filter((r) => r.verdict !== 'skip').map((r, k) => {
+            const col = r.verdict === 'up' ? t.good : r.verdict === 'miss' ? t.bad : r.verdict === 'skip' ? t.muted : t.accent;
+            const icon = r.verdict === 'up' ? '▲' : r.verdict === 'close' ? '≈' : r.verdict === 'miss' ? '▼' : r.verdict === 'skip' ? '–' : '•';
+            return (
+              <View key={r.ex + k} style={{ flexDirection: 'row', gap: 10, paddingVertical: 10, borderTopWidth: k ? 0.5 : 0, borderTopColor: t.line }}>
+                <Text style={{ color: col, fontSize: 16, width: 18, textAlign: 'center', marginTop: 2 }}>{icon}</Text>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+                    <Body style={{ fontWeight: '600', flex: 1 }}>{r.name}</Body>
+                    {r.kg ? <Meta style={{ fontVariant: ['tabular-nums'] }}>{fmt(r.kg)} kg · {r.reps}</Meta> : null}
+                  </View>
+                  <Meta style={{ fontSize: 14 }}>{r.delta}</Meta>
+                  <Meta style={{ fontSize: 14, color: col }}>{r.next}</Meta>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      ) : null}
       {props.length ? (
         <View>
           <H3>Charges pour la prochaine fois</H3>

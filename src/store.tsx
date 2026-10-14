@@ -93,6 +93,7 @@ export interface Store {
   deleteWorkout: (id: string) => void;
   startWorkout: (id: string) => void;
   updateActive: (fn: (a: Active) => Active) => void;
+  setSetup: (id: string, setup: string) => void;
   finishWorkout: (note: string, apply: { ex: string; nv: number }[]) => void;
   abandonWorkout: () => void;
   deleteLog: (id: string) => void;
@@ -208,6 +209,7 @@ export function StoreProvider({ children, fallback }: { children: React.ReactNod
             muscle: input.muscle,
             equip: input.equip,
             step: input.step,
+            setup: input.setup?.trim() || undefined,
             load: prev?.load ?? 0,
             loadHistory: prev?.loadHistory ?? [],
           };
@@ -264,6 +266,7 @@ export function StoreProvider({ children, fallback }: { children: React.ReactNod
           };
           return { ...d, active };
         }),
+      setSetup: (id, setup) => mut((d) => (d.exercises[id] ? { ...d, exercises: { ...d.exercises, [id]: { ...d.exercises[id], setup: setup.trim() || undefined, u: now() } } } : d)),
       updateActive: (fn) => set((d) => (d.active ? { ...d, active: fn(d.active) } : d)),
       finishWorkout: (note, apply) =>
         mut((d) => {

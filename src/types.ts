@@ -9,6 +9,8 @@ export interface Exercise {
   load: number;
   step: number;
   loadHistory: { d: string; v: number }[];
+  /** Réglages de la machine (siège, dossier, poignées…) */
+  setup?: string;
   /** Horodatage de la dernière modification (synchro entre appareils). */
   u?: number;
 }

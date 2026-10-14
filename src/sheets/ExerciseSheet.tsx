@@ -24,12 +24,13 @@ export function ExerciseForm({
   const [equip, setEquip] = useState<Equip>(ex?.equip ?? 'barre');
   const [step, setStep] = useState(ex?.step ?? 2.5);
   const [load, setLoad] = useState(ex ? fmt(ex.load) : '20');
+  const [setup, setSetup] = useState(ex?.setup ?? '');
   const [confirmDel, setConfirmDel] = useState(false);
   const n = id ? sharedCount(data.workouts, id) : 0;
 
   const submit = () => {
     if (!name.trim()) return toast("Donne un nom à l'exercice.");
-    const nid = saveExercise({ id, name: name.trim(), muscle, equip, step, load: Math.max(0, parseNum(load)) });
+    const nid = saveExercise({ id, name: name.trim(), muscle, equip, step, setup, load: Math.max(0, parseNum(load)) });
     toast(id ? 'Exercice mis à jour' : 'Exercice ajouté');
     onSaved(nid);
   };
@@ -64,6 +65,7 @@ export function ExerciseForm({
       <View style={{ flexDirection: 'row', gap: 12 }}>
         <Field label="Charge de travail (kg)" value={load} onChangeText={setLoad} keyboardType="decimal-pad" />
       </View>
+      <Field label="Réglages de la machine" value={setup} onChangeText={setSetup} placeholder="Siège 4, dossier 2, poignées hautes…" />
       <View style={{ gap: 6 }}>
         <Meta style={{ fontWeight: '600' }}>Pas d'augmentation</Meta>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>

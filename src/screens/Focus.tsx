@@ -50,7 +50,7 @@ function SetDots({ total, done, current }: { total: number; done: number; curren
 
 export function Focus({ onFinish }: { onFinish: () => void }) {
   const t = useTheme();
-  const { data, changeLoad, updateActive } = useStore();
+  const { data, changeLoad, updateActive, setSetup } = useStore();
   const { toast } = useNav();
   const a = data.active as Active;
   const rest = a.rest;
@@ -62,6 +62,8 @@ export function Focus({ onFinish }: { onFinish: () => void }) {
   const [picker, setPicker] = useState(false);
   const [techSheet, setTechSheet] = useState(false);
   const [zoneSheet, setZoneSheet] = useState(false);
+  const [setupSheet, setSetupSheet] = useState(false);
+  const [setupTxt, setSetupTxt] = useState('');
   const [zone, setZone] = useState('');
   const [zoneBusy, setZoneBusy] = useState(false);
   const [zoneErr, setZoneErr] = useState('');
@@ -149,6 +151,20 @@ export function Focus({ onFinish }: { onFinish: () => void }) {
       </View>
       <Body>{zoneTip ?? 'Pas de consigne pour cet exercice, fais-le normalement.'}</Body>
     </Card>
+  ) : null;
+
+  const setupEl = ex ? (
+    <Pressable onPress={() => { setSetupTxt(ex.setup ?? ''); setSetupSheet(true); }} accessibilityRole="button" hitSlop={6}>
+      <Text style={{ color: ex.setup ? t.muted : t.accent, fontSize: 15 }}>{ex.setup ? `⚙︎ ${ex.setup}` : '⚙︎ Noter les réglages de la machine'}</Text>
+    </Pressable>
+  ) : null;
+  const setupSheetEl = ex ? (
+    <Sheet visible={setupSheet} onClose={() => setSetupSheet(false)}>
+      <H2>Réglages de la machine</H2>
+      <Meta>{ex.name} · retenu pour toutes les séances.</Meta>
+      <Field value={setupTxt} onChangeText={setSetupTxt} placeholder="Siège 4, dossier 2, poignées hautes…" autoFocus />
+      <Btn label="Enregistrer" onPress={() => { setSetup(ex.id, setupTxt); setSetupSheet(false); }} />
+    </Sheet>
   ) : null;
 
   const techSheetEl = (
@@ -252,6 +268,7 @@ export function Focus({ onFinish }: { onFinish: () => void }) {
           <Meta>
             Série {j + 1} sur {e.sets.length} · {fmt(kg)} kg · objectif {goal} reps
           </Meta>
+          {ex?.setup ? <Meta style={{ color: t.ink }}>⚙︎ {ex.setup}</Meta> : null}
           {zoneTip ? <Meta style={{ color: t.accent }}>{a.focus?.zone} : {zoneTip}</Meta> : null}
           {rest.kind === 'ex' && others.length ? <Btn small kind="ghost" label="Machine occupée ? Changer d'exercice" onPress={() => setPicker(true)} style={{ alignSelf: 'flex-start', marginTop: 6 }} /> : null}
         </Card>
@@ -276,6 +293,7 @@ export function Focus({ onFinish }: { onFinish: () => void }) {
           </Text>
           <SetDots total={e.sets.length} done={doneSets.length} current={j} />
         </View>
+        {setupEl}
       </View>
 
       <Card style={{ gap: 14 }}>
@@ -367,6 +385,7 @@ export function Focus({ onFinish }: { onFinish: () => void }) {
       {pickerSheet}
       {techSheetEl}
       {zoneSheetEl}
+      {setupSheetEl}
     </View>
   );
 }

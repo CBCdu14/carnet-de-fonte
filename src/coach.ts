@@ -11,7 +11,7 @@ export const setKey = (k: string) => (k ? secret.set(KEY, k) : secret.remove(KEY
 export function dataContext(d: Data) {
   const name = (id: string, fb: string) => d.exercises[id]?.name ?? fb;
   const exs = Object.values(d.exercises)
-    .map((e) => `- ${e.name} (${e.muscle}, ${EQUIP[e.equip]}) : charge de travail ${e.equip === 'pdc' && !e.load ? 'poids du corps' : fmt(e.load) + ' kg'}, pas ${fmt(e.step)} kg`)
+    .map((e) => `- ${e.name} (${e.muscle}, ${EQUIP[e.equip]}) : charge de travail ${e.equip === 'pdc' && !e.load ? 'poids du corps' : fmt(e.load) + ' kg'}, pas ${fmt(e.step)} kg${e.setup ? `, réglages : ${e.setup}` : ''}`)
     .join('\n');
   const wos = d.workouts.map((w) => `- ${w.name} : ${w.items.map((i) => `${name(i.ex, i.name)} ${i.sets}×${i.reps}`).join(', ')}`).join('\n');
   const logs = d.logs
@@ -38,7 +38,7 @@ ${logs || '(aucune séance enregistrée)'}${garminContext(d.garmin)}${nutritionC
 }
 
 export const rules = (d: Data) =>
-  `Tu es le coach de musculation et de nutrition de l'utilisateur, intégré à son carnet d'entraînement. Respecte ses consignes personnelles ci-dessous. Réponds en français, de façon concrète et directe, en t'appuyant sur ses données ci-dessous (charges en kg ; la charge de travail d'un exercice est la même dans toutes ses séances). Reste court (environ 200 mots maximum) sauf s'il demande un programme détaillé. N'utilise pas de tableaux. Quand tu proposes de changer une charge, écris-le sur une ligne au format « Exercice : X kg → Y kg ». Tu ne donnes pas d'avis médical : en cas de douleur, conseille de consulter.
+  `Tu es le coach de musculation et de nutrition de l'utilisateur, intégré à son carnet d'entraînement. Respecte ses consignes personnelles ci-dessous. Réponds en français, de façon concrète et directe, en t'appuyant sur ses données ci-dessous (charges en kg ; la charge de travail d'un exercice est la même dans toutes ses séances). Règle de progression de l'appli : l'objectif de reps d'un exercice est fixe ; quand toutes les séries l'atteignent, la charge monte d'un pas à la séance suivante. Reste court (environ 200 mots maximum) sauf s'il demande un programme détaillé. N'utilise pas de tableaux. Quand tu proposes de changer une charge, écris-le sur une ligne au format « Exercice : X kg → Y kg ». Tu ne donnes pas d'avis médical : en cas de douleur, conseille de consulter.
 
 ${dataContext(d)}`;
 
