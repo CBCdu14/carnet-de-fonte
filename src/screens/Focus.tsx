@@ -285,18 +285,23 @@ export function Focus({ onFinish }: { onFinish: () => void }) {
   /* ---------- Exercice en cours ---------- */
   return (
     <View style={{ gap: 16 }}>
-      <View style={{ gap: 6 }}>
-        <Meta>
-          Exercice {Math.min(exNumber, a.entries.length)} sur {a.entries.length}
-        </Meta>
-        <Text style={{ color: t.ink, fontSize: 30, fontWeight: '700' }}>{ex?.name ?? e.name}</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Text style={{ color: t.muted, fontSize: 17 }}>
-            Série {j + 1} sur {e.sets.length}
-          </Text>
-          <SetDots total={e.sets.length} done={doneSets.length} current={j} />
+      <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
+        <View style={{ gap: 6, flex: 1, minWidth: 0 }}>
+          <Meta>
+            Exercice {Math.min(exNumber, a.entries.length)} sur {a.entries.length}
+          </Meta>
+          <Text style={{ color: t.ink, fontSize: 30, fontWeight: '700' }}>{ex?.name ?? e.name}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Text style={{ color: t.muted, fontSize: 17 }}>
+              Série {j + 1} sur {e.sets.length}
+            </Text>
+            <SetDots total={e.sets.length} done={doneSets.length} current={j} />
+          </View>
+          {setupEl}
         </View>
-        {setupEl}
+        <Pressable onPress={() => setTechSheet(true)} accessibilityLabel="Muscles travaillés" hitSlop={6}>
+          <BodyMap name={ex?.name ?? e.name} muscle={ex?.muscle} h={120} labels={false} />
+        </Pressable>
       </View>
 
       <Card style={{ gap: 14 }}>

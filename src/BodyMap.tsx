@@ -127,23 +127,23 @@ function Figure({ back, fill, h }: { back: boolean; fill: (z: Zone) => string | 
   );
 }
 
-export function BodyMap({ name, muscle, compact }: { name: string; muscle?: string; compact?: boolean }) {
+export function BodyMap({ name, muscle, compact, h: hp, labels = true }: { name: string; muscle?: string; compact?: boolean; h?: number; labels?: boolean }) {
   const t = useTheme();
   const m = musclesFor(name, muscle);
   if (!m) return null;
   const soft = rgba(t.accent, 0.35);
   const fill = (z: Zone) => (m.p.includes(z) ? t.accent : m.s.includes(z) ? soft : undefined);
-  const h = compact ? 150 : 230;
+  const h = hp ?? (compact ? 150 : 230);
   return (
     <View style={{ alignItems: 'center', gap: 6 }}>
-      <View style={{ flexDirection: 'row', gap: compact ? 8 : 16 }}>
+      <View style={{ flexDirection: 'row', gap: h < 140 ? 4 : compact ? 8 : 16 }}>
         <Figure back={false} fill={fill} h={h} />
         <Figure back fill={fill} h={h} />
       </View>
-      <Text style={{ color: t.muted, fontSize: 13, textAlign: 'center' }}>
+      {labels ? <Text style={{ color: t.muted, fontSize: 13, textAlign: 'center' }}>
         <Text style={{ color: t.accent, fontWeight: '600' }}>{m.p.map((z) => ZONE_LABEL[z]).join(', ')}</Text>
         {m.s.length ? ` · ${m.s.map((z) => ZONE_LABEL[z]).join(', ')}` : ''}
-      </Text>
+      </Text> : null}
     </View>
   );
 }
