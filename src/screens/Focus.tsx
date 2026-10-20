@@ -51,7 +51,7 @@ function SetDots({ total, done, current }: { total: number; done: number; curren
 
 export function Focus({ onFinish }: { onFinish: () => void }) {
   const t = useTheme();
-  const { data, changeLoad, updateActive, setSetup } = useStore();
+  const { data, changeLoad, updateActive, setSetup, setLoad } = useStore();
   const { toast } = useNav();
   const a = data.active as Active;
   const rest = a.rest;
@@ -65,6 +65,8 @@ export function Focus({ onFinish }: { onFinish: () => void }) {
   const [zoneSheet, setZoneSheet] = useState(false);
   const [setupSheet, setSetupSheet] = useState(false);
   const [setupTxt, setSetupTxt] = useState('');
+  const [loadSheet, setLoadSheet] = useState(false);
+  const [loadTxt, setLoadTxt] = useState('');
   const [zone, setZone] = useState('');
   const [zoneBusy, setZoneBusy] = useState(false);
   const [zoneErr, setZoneErr] = useState('');
@@ -158,6 +160,30 @@ export function Focus({ onFinish }: { onFinish: () => void }) {
     <Pressable onPress={() => { setSetupTxt(ex.setup ?? ''); setSetupSheet(true); }} accessibilityRole="button" hitSlop={6}>
       <Text style={{ color: ex.setup ? t.muted : t.accent, fontSize: 15 }}>{ex.setup ? `⚙︎ ${ex.setup}` : '⚙︎ Noter les réglages de la machine'}</Text>
     </Pressable>
+  ) : null;
+  const loadSheetEl = ex ? (
+    <Sheet visible={loadSheet} onClose={() => setLoadSheet(false)}>
+      <H2>Charge de travail</H2>
+      <Meta>{ex.name} · s'applique à toutes les séances. Mets ce que la machine permet vraiment.</Meta>
+      <Field value={loadTxt} onChangeText={setLoadTxt} keyboardType="decimal-pad" placeholder={fmt(ex.load)} autoFocus />
+      <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+        {[-5, -2.5, -1, 1, 2.5, 5].map((d) => (
+          <Chip key={d} label={`${d > 0 ? '+' : ''}${fmt(d)}`} onPress={() => setLoadTxt(fmt(Math.max(0, parseNum(loadTxt || String(ex.load)) + d)))} />
+        ))}
+      </View>
+      <Btn
+        label="Enregistrer"
+        onPress={() => {
+          const v = parseNum(loadTxt);
+          if (!(v >= 0) || !loadTxt.trim()) return;
+          setLoad(ex.id, v);
+          updateActive((x) => ({ ...x, entries: x.entries.map((en, i) => (i === ci ? { ...en, sets: en.sets.map((s) => (s.done ? s : { ...s, kg: fmt(v) })) } : en)) }));
+          const n = sharedCount(data.workouts, ex.id);
+          if (n > 1) toast(`${ex.name} : ${fmt(v)} kg dans ${n} séances`);
+          setLoadSheet(false);
+        }}
+      />
+    </Sheet>
   ) : null;
   const setupSheetEl = ex ? (
     <Sheet visible={setupSheet} onClose={() => setSetupSheet(false)}>
@@ -306,12 +332,12 @@ export function Focus({ onFinish }: { onFinish: () => void }) {
 
       <Card style={{ gap: 14 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <View>
-            <Meta style={{ fontSize: 13 }}>Charge</Meta>
+          <Pressable onPress={() => { if (!ex) return; setLoadTxt(''); setLoadSheet(true); }} accessibilityRole="button" accessibilityLabel="Modifier la charge" disabled={!ex}>
+            <Meta style={{ fontSize: 13 }}>Charge {ex ? '· toucher pour modifier' : ''}</Meta>
             <Text style={{ color: t.ink, fontSize: 40, fontWeight: '700', fontVariant: ['tabular-nums'] }}>
               {ex?.equip === 'pdc' && !kg ? 'PdC' : `${fmt(kg)} kg`}
             </Text>
-          </View>
+          </Pressable>
           {ex ? (
             <View style={{ flexDirection: 'row', gap: 10 }}>
               {([-1, 1] as const).map((d) => (
@@ -394,6 +420,7 @@ export function Focus({ onFinish }: { onFinish: () => void }) {
       {techSheetEl}
       {zoneSheetEl}
       {setupSheetEl}
+      {loadSheetEl}
     </View>
   );
 }
