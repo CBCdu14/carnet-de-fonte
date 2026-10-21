@@ -23,6 +23,7 @@ export function ExerciseForm({
   const [muscle, setMuscle] = useState(ex?.muscle ?? 'Pectoraux');
   const [equip, setEquip] = useState<Equip>(ex?.equip ?? 'barre');
   const [step, setStep] = useState(ex?.step ?? 2.5);
+  const [stepTxt, setStepTxt] = useState(ex && !STEPS.includes(ex.step) ? fmt(ex.step) : '');
   const [load, setLoad] = useState(ex ? fmt(ex.load) : '20');
   const [setup, setSetup] = useState(ex?.setup ?? '');
   const [pMin, setPMin] = useState(String(ex?.prog?.min ?? DEF_PROG.min));
@@ -86,9 +87,10 @@ export function ExerciseForm({
         <Meta style={{ fontWeight: '600' }}>Pas d'augmentation</Meta>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
           {STEPS.map((s) => (
-            <Chip key={s} label={`${fmt(s)} kg`} active={s === step} onPress={() => setStep(s)} />
+            <Chip key={s} label={`${fmt(s)} kg`} active={s === step && !stepTxt} onPress={() => { setStep(s); setStepTxt(''); }} />
           ))}
         </View>
+        <Field label="Autre pas (kg)" value={stepTxt} onChangeText={(v) => { setStepTxt(v); const n = parseNum(v); if (n > 0) setStep(n); }} keyboardType="decimal-pad" placeholder="ex. 9 pour une machine à paliers de 9 kg" />
       </View>
       {n ? <Meta>Utilisé dans {n} séance{n > 1 ? 's' : ''} : un changement de charge s'applique partout.</Meta> : null}
       <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
