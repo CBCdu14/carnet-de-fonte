@@ -10,8 +10,10 @@ export function ExerciseForm({
   onSaved,
   onCancel,
   submitLabel = 'Enregistrer',
+  preset,
 }: {
   id?: string;
+  preset?: { name: string; muscle: string; equip: Equip; step: number };
   onSaved: (id: string) => void;
   onCancel: () => void;
   submitLabel?: string;
@@ -19,11 +21,11 @@ export function ExerciseForm({
   const { data, saveExercise, deleteExercise } = useStore();
   const { toast } = useNav();
   const ex = id ? data.exercises[id] : undefined;
-  const [name, setName] = useState(ex?.name ?? '');
-  const [muscle, setMuscle] = useState(ex?.muscle ?? 'Pectoraux');
-  const [equip, setEquip] = useState<Equip>(ex?.equip ?? 'barre');
-  const [step, setStep] = useState(ex?.step ?? 2.5);
-  const [stepTxt, setStepTxt] = useState(ex && !STEPS.includes(ex.step) ? fmt(ex.step) : '');
+  const [name, setName] = useState(ex?.name ?? preset?.name ?? '');
+  const [muscle, setMuscle] = useState(ex?.muscle ?? preset?.muscle ?? 'Pectoraux');
+  const [equip, setEquip] = useState<Equip>(ex?.equip ?? preset?.equip ?? 'barre');
+  const [step, setStep] = useState(ex?.step ?? preset?.step ?? 2.5);
+  const [stepTxt, setStepTxt] = useState(ex && !STEPS.includes(ex.step) ? fmt(ex.step) : preset && !STEPS.includes(preset.step) ? fmt(preset.step) : '');
   const [load, setLoad] = useState(ex ? fmt(ex.load) : '20');
   const [setup, setSetup] = useState(ex?.setup ?? '');
   const [pMin, setPMin] = useState(String(ex?.prog?.min ?? DEF_PROG.min));

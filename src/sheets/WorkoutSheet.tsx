@@ -6,6 +6,7 @@ import { Btn, Chip, Eyebrow, Field, H2, H3, Meta, Sheet, Body, useNav } from '..
 import { fmt } from '../logic';
 import type { WorkoutItem } from '../types';
 import { ExerciseForm } from './ExerciseSheet';
+import { CATALOG, type CatalogEx } from '../catalog';
 
 export function WorkoutSheet({ id, onClose, startPicking }: { id: string | null; onClose: () => void; startPicking?: boolean }) {
   const t = useTheme();
@@ -17,7 +18,8 @@ export function WorkoutSheet({ id, onClose, startPicking }: { id: string | null;
     (orig?.items ?? []).map((i) => ({ ...i, setsT: String(i.sets), repsT: String(i.reps) })),
   );
   const [picking, setPicking] = useState(!!startPicking);
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState<false | true | CatalogEx>(false);
+  const [zone, setZone] = useState<string>('mes');
   const [confirmDel, setConfirmDel] = useState(false);
 
   const available = useMemo(
@@ -54,7 +56,9 @@ export function WorkoutSheet({ id, onClose, startPicking }: { id: string | null;
     return (
       <Sheet visible onClose={() => setCreating(false)}>
         <H2>Nouvel exercice</H2>
+        {typeof creating === 'object' ? <Meta>{creating.why} Indique la charge avec laquelle tu commences.</Meta> : null}
         <ExerciseForm
+          preset={typeof creating === 'object' ? creating : undefined}
           submitLabel="Ajouter à la séance"
           onCancel={() => setCreating(false)}
           onSaved={(exId) => {
@@ -98,14 +102,43 @@ export function WorkoutSheet({ id, onClose, startPicking }: { id: string | null;
       </View>
 
       {picking ? (
-        <View style={{ gap: 8 }}>
+        <View style={{ gap: 10 }}>
           <H3>Ajouter un exercice</H3>
+          <Meta>Quelle zone veux-tu travailler ?</Meta>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {available.map((e) => (
-              <Chip key={e.id} label={`${e.name} · ${fmt(e.load)} kg`} onPress={() => add(e.id)} />
-            ))}
-            <Chip label="+ Nouvel exercice" active onPress={() => { setPicking(false); setCreating(true); }} />
+            <Chip label="Mes exercices" active={zone === 'mes'} onPress={() => setZone('mes')} />
+            {CATALOG.map((c) => <Chip key={c.zone} label={c.zone} active={zone === c.zone} onPress={() => setZone(c.zone)} />)}
           </View>
+          {zone === 'mes' ? (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {available.map((e) => (
+                <Chip key={e.id} label={`${e.name} · ${fmt(e.load)} kg`} onPress={() => add(e.id)} />
+              ))}
+              {!available.length ? <Meta>Tous tes exercices sont déjà dans cette séance.</Meta> : null}
+            </View>
+          ) : (
+            <View style={{ borderRadius: 12, backgroundColor: t.bg, overflow: 'hidden' }}>
+              {(CATALOG.find((c) => c.zone === zone)?.exs ?? []).map((c, k) => {
+                const mine = Object.values(data.exercises).find((e) => e.name.trim().toLowerCase() === c.name.toLowerCase());
+                const inWo = mine ? items.some((i) => i.ex === mine.id) : false;
+                return (
+                  <Pressable
+                    key={c.name}
+                    disabled={inWo}
+                    onPress={() => (mine ? add(mine.id) : (setPicking(false), setCreating(c)))}
+                    style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 12, borderTopWidth: k ? 0.5 : 0, borderTopColor: t.line, opacity: inWo ? 0.4 : pressed ? 0.6 : 1 })}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Body>{c.name}</Body>
+                      <Meta style={{ fontSize: 13 }}>{inWo ? 'Déjà dans la séance' : mine ? `Déjà dans tes exercices · ${fmt(mine.load)} kg` : c.why}</Meta>
+                    </View>
+                    <Text style={{ color: t.accent, fontSize: 15 }}>{mine ? 'Ajouter' : 'Créer'}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+          <Chip label="+ Autre exercice (libre)" active onPress={() => { setPicking(false); setCreating(true); }} />
         </View>
       ) : (
         <Btn kind="ghost" label="+ Ajouter un exercice" onPress={() => setPicking(true)} />
