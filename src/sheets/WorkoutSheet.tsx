@@ -7,7 +7,7 @@ import { fmt } from '../logic';
 import type { WorkoutItem } from '../types';
 import { ExerciseForm } from './ExerciseSheet';
 
-export function WorkoutSheet({ id, onClose }: { id: string | null; onClose: () => void }) {
+export function WorkoutSheet({ id, onClose, startPicking }: { id: string | null; onClose: () => void; startPicking?: boolean }) {
   const t = useTheme();
   const { data, saveWorkout, deleteWorkout } = useStore();
   const { toast } = useNav();
@@ -16,7 +16,7 @@ export function WorkoutSheet({ id, onClose }: { id: string | null; onClose: () =
   const [items, setItems] = useState<(WorkoutItem & { setsT: string; repsT: string })[]>(
     (orig?.items ?? []).map((i) => ({ ...i, setsT: String(i.sets), repsT: String(i.reps) })),
   );
-  const [picking, setPicking] = useState(false);
+  const [picking, setPicking] = useState(!!startPicking);
   const [creating, setCreating] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
 

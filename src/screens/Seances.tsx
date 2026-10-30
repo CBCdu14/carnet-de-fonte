@@ -36,6 +36,7 @@ export function Seances() {
   const { data, changeLoad, startWorkout, abandonWorkout } = useStore();
   const { go, toast } = useNav();
   const [edit, setEdit] = useState<string | null | undefined>(undefined); // undefined = fermé, null = nouvelle
+  const [editAdd, setEditAdd] = useState(false);
   const [conflict, setConflict] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -56,7 +57,7 @@ export function Seances() {
 
   const sheets = (
     <>
-      {edit !== undefined ? <WorkoutSheet id={edit} onClose={() => setEdit(undefined)} /> : null}
+      {edit !== undefined ? <WorkoutSheet id={edit} startPicking={editAdd} onClose={() => { setEdit(undefined); setEditAdd(false); }} /> : null}
       <Sheet visible={!!conflict} onClose={() => setConflict(null)}>
         <H2>Séance déjà en cours</H2>
         <Body>
@@ -127,6 +128,11 @@ export function Seances() {
         <Meta style={{ marginHorizontal: 16, marginTop: -8, fontSize: 13 }}>
           La charge appartient à l'exercice : la changer ici la change dans toutes les séances qui l'utilisent.
         </Meta>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <Btn kind="ghost" label="+ Ajouter un exercice" onPress={() => { setEditAdd(true); setEdit(open.id); }} style={{ flex: 1 }} />
+          <Btn kind="ghost" label="Modifier la séance" onPress={() => setEdit(open.id)} style={{ flex: 1 }} />
+        </View>
+        <Meta style={{ textAlign: 'center', fontSize: 13 }}>Dans « Modifier » : renommer, réordonner, retirer un exercice, changer séries et reps, ou supprimer la séance.</Meta>
         {sheets}
       </Screen>
     );
@@ -208,6 +214,7 @@ export function Seances() {
               </Pressable>
             ))}
           </Card>
+          <Btn kind="ghost" label="+ Nouvelle séance" onPress={() => setEdit(null)} />
         </>
       )}
 
