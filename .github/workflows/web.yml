@@ -26,8 +26,11 @@ jobs:
       - run: npm ci
       - run: npx tsc --noEmit
       - run: npx expo export --platform web --output-dir dist
+        timeout-minutes: 8
         env:
           CI: 1
+          EXPO_NO_TELEMETRY: 1
+          EXPO_OFFLINE: 1
       # GitHub Pages : page de secours pour les liens profonds + pas de traitement Jekyll
       - run: cp dist/index.html dist/404.html && touch dist/.nojekyll
       - uses: actions/upload-pages-artifact@v3
