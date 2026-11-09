@@ -28,6 +28,7 @@ export function ExerciseForm({
   const [stepTxt, setStepTxt] = useState(ex && !STEPS.includes(ex.step) ? fmt(ex.step) : preset && !STEPS.includes(preset.step) ? fmt(preset.step) : '');
   const [load, setLoad] = useState(ex ? fmt(ex.load) : '20');
   const [setup, setSetup] = useState(ex?.setup ?? '');
+  const [rest, setRest] = useState(ex?.restSec ? String(ex.restSec) : '');
   const [pMin, setPMin] = useState(String(ex?.prog?.min ?? DEF_PROG.min));
   const [pMax, setPMax] = useState(String(ex?.prog?.max ?? DEF_PROG.max));
   const [pCur, setPCur] = useState(ex?.prog ? String(ex.prog.reps) : '');
@@ -40,7 +41,7 @@ export function ExerciseForm({
     const max = Math.max(min, parseInt(pMax) || DEF_PROG.max);
     const cur = parseInt(pCur);
     const prog = ex?.prog || cur ? { min, max, reps: Math.min(max, Math.max(min, cur || ex?.prog?.reps || min)), hits: ex?.prog && ex.prog.reps === (cur || ex.prog.reps) ? ex.prog.hits : 0 } : undefined;
-    const nid = saveExercise({ id, name: name.trim(), muscle, equip, step, setup, prog, load: Math.max(0, parseNum(load)) });
+    const nid = saveExercise({ id, name: name.trim(), muscle, equip, step, setup, prog, restSec: Math.max(0, parseInt(rest) || 0), load: Math.max(0, parseNum(load)) });
     toast(id ? 'Exercice mis à jour' : 'Exercice ajouté');
     onSaved(nid);
   };
@@ -76,6 +77,14 @@ export function ExerciseForm({
         <Field label="Charge de travail (kg)" value={load} onChangeText={setLoad} keyboardType="decimal-pad" />
       </View>
       <Field label="Réglages de la machine" value={setup} onChangeText={setSetup} placeholder="Siège 4, dossier 2, poignées hautes…" />
+      <View style={{ gap: 6 }}>
+        <Meta style={{ fontWeight: '600' }}>Repos entre les séries</Meta>
+        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Chip label="Réglage général" active={!rest} onPress={() => setRest('')} />
+          {[60, 90, 120, 180].map((s) => <Chip key={s} label={s < 120 ? `${s} s` : `${s / 60} min`} active={rest === String(s)} onPress={() => setRest(String(s))} />)}
+        </View>
+        <Field label="Ou en secondes" value={rest} onChangeText={(v) => setRest(v.replace(/[^0-9]/g, ''))} keyboardType="number-pad" placeholder="ex. 75" />
+      </View>
       <View style={{ gap: 6 }}>
         <Meta style={{ fontWeight: '600' }}>Progression des reps</Meta>
         <View style={{ flexDirection: 'row', gap: 12 }}>

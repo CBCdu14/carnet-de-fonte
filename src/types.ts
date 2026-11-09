@@ -11,6 +11,8 @@ export interface Exercise {
   loadHistory: { d: string; v: number }[];
   /** Réglages de la machine (siège, dossier, poignées…) */
   setup?: string;
+  /** Repos entre les séries de cet exercice (s) ; sinon le réglage général */
+  restSec?: number;
   /** Progression des reps : objectif courant entre min et max ; à max réussi, la charge monte et on repart à min. */
   prog?: RepProg;
   /** Horodatage de la dernière modification (synchro entre appareils). */

@@ -210,6 +210,7 @@ export function StoreProvider({ children, fallback }: { children: React.ReactNod
             equip: input.equip,
             step: input.step,
             setup: input.setup?.trim() || undefined,
+            restSec: input.restSec || undefined,
             prog: input.prog,
             load: prev?.load ?? 0,
             loadHistory: prev?.loadHistory ?? [],

@@ -53,7 +53,7 @@ export function Session() {
     if (!wasDone) {
       buzz('tap');
       unlockAudio();
-      const sec = data.settings.restSec;
+      const sec = data.exercises[a.entries[i].ex]?.restSec || data.settings.restSec;
       if (sec > 0) updateActive((x) => ({ ...x, rest: { end: Date.now() + sec * 1000, total: sec, kind: 'set' } }));
     }
   };

@@ -24,6 +24,8 @@ export function Reglages() {
   const [key, setKeyText] = useState('');
   const [hasKey, setHasKey] = useState(false);
   const [model, setModel] = useState(data.settings.model);
+  const [restTxt, setRestTxt] = useState('');
+  const [restExTxt, setRestExTxt] = useState('');
   const [pending, setPending] = useState<Pick<Data, 'exercises' | 'workouts' | 'logs'> | null>(null);
   const [repo, setRepo] = useState(data.settings.garminRepo);
   const [gh, setGh] = useState('');
@@ -170,12 +172,15 @@ export function Reglages() {
             <Chip key={s} label={restLabel(s)} active={data.settings.restSec === s} onPress={() => setSettings({ restSec: s })} />
           ))}
         </View>
+        <Field label="Autre (secondes)" value={restTxt} onChangeText={(v) => setRestTxt(v.replace(/[^0-9]/g, ''))} keyboardType="number-pad" placeholder={String(data.settings.restSec)} onEndEditing={() => { const n = parseInt(restTxt); if (n > 0) setSettings({ restSec: n }); setRestTxt(''); }} />
+        <Meta style={{ fontSize: 13 }}>Chaque exercice peut avoir son propre repos : c'est dans sa fiche.</Meta>
         <Meta style={{ fontWeight: '600', marginTop: 4 }}>Entre deux exercices</Meta>
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
           {[60, 90, 120, 150, 180, 240].map((s) => (
             <Chip key={s} label={restLabel(s)} active={data.settings.restExSec === s} onPress={() => setSettings({ restExSec: s })} />
           ))}
         </View>
+        <Field label="Autre (secondes)" value={restExTxt} onChangeText={(v) => setRestExTxt(v.replace(/[^0-9]/g, ''))} keyboardType="number-pad" placeholder={String(data.settings.restExSec)} onEndEditing={() => { const n = parseInt(restExTxt); if (n > 0) setSettings({ restExSec: n }); setRestExTxt(''); }} />
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginTop: 4 }}>
           <Chip label={data.settings.sound ? 'Bip de fin : activé' : 'Bip de fin : coupé'} active={data.settings.sound} onPress={() => setSettings({ sound: !data.settings.sound })} />
         </View>

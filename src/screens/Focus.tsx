@@ -107,7 +107,7 @@ export function Focus({ onFinish }: { onFinish: () => void }) {
   };
   const validate = () => {
     buzz('tap');
-    updateActive((x) => completeSet(x, ci, reps, String(kg).replace('.', ','), data.settings.restSec, data.settings.restExSec));
+    updateActive((x) => completeSet(x, ci, reps, String(kg).replace('.', ','), ex?.restSec || data.settings.restSec, data.settings.restExSec));
     setRepsSheet(false);
   };
   const pick = (idx: number) => {
@@ -413,7 +413,7 @@ export function Focus({ onFinish }: { onFinish: () => void }) {
         <Meta style={{ textAlign: 'center' }}>{reps >= goal ? 'Objectif atteint' : `Objectif : ${goal} reps`}</Meta>
         <Btn label="OK" onPress={validate} />
         <Meta style={{ textAlign: 'center', fontSize: 13 }}>
-          Ensuite : repos de {fmtClock(nextSet({ ...e, sets: e.sets.map((s, k) => (k === j ? { ...s, done: true } : s)) }) >= 0 ? data.settings.restSec : data.settings.restExSec)}
+          Ensuite : repos de {fmtClock(nextSet({ ...e, sets: e.sets.map((s, k) => (k === j ? { ...s, done: true } : s)) }) >= 0 ? ex?.restSec || data.settings.restSec : data.settings.restExSec)}
         </Meta>
       </Sheet>
       {pickerSheet}
